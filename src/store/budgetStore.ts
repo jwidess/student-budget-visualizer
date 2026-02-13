@@ -48,6 +48,7 @@ interface BudgetActions {
   updateFoodBudget: (data: Partial<FoodBudget>) => void;
   updateTransportConfig: (data: Partial<TransportConfig>) => void;
 
+  applyTemplate: (config: BudgetConfig) => void;
   resetAll: () => void;
 }
 
@@ -243,7 +244,8 @@ export const useBudgetStore = create<BudgetStore>()(
         set((state) => ({
           transportConfig: { ...state.transportConfig, ...data },
         })),
-
+applyTemplate: (config) => set(config),
+      
       resetAll: () => set(defaultConfig),
     }),
     {
