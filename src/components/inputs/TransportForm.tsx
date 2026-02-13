@@ -40,7 +40,7 @@ export function TransportForm() {
             onChange={(e) =>
               updateTransportConfig({ enabled: e.target.checked })
             }
-            className="rounded border-input"
+            className="rounded border-input cursor-pointer"
           />
           Enabled
         </label>
@@ -55,7 +55,7 @@ export function TransportForm() {
       {transportConfig.enabled && (
         <>
           {/* Auto Transit */}
-          <div className="rounded-lg border border-input overflow-hidden">
+          <div className="rounded-lg border border-input overflow-hidden pt-1">
             <button
               onClick={() => setAutoOpen((o) => !o)}
               className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium hover:bg-accent hover:shadow-sm transition-all cursor-pointer"
@@ -73,7 +73,7 @@ export function TransportForm() {
                     updateTransportConfig({ autoEnabled: e.target.checked });
                     if (e.target.checked) setAutoOpen(true);
                   }}
-                  className="rounded border-input"
+                  className="rounded border-input cursor-pointer"
                 />
               </label>
               <ChevronDown
@@ -166,7 +166,7 @@ export function TransportForm() {
                     updateTransportConfig({ publicEnabled: e.target.checked });
                     if (e.target.checked) setPublicOpen(true);
                   }}
-                  className="rounded border-input"
+                  className="rounded border-input cursor-pointer"
                 />
               </label>
               <ChevronDown
@@ -198,7 +198,7 @@ export function TransportForm() {
           </div>
 
           {/* Summary */}
-          <div className="rounded-md bg-muted/50 p-3">
+          <div className="rounded-md bg-muted/50 p-3 -mt-5">
             <p className="text-xs font-medium text-muted-foreground">
               Estimated monthly commuting cost
             </p>

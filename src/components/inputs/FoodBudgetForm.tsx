@@ -25,7 +25,7 @@ export function FoodBudgetForm() {
             type="checkbox"
             checked={foodBudget.enabled}
             onChange={(e) => updateFoodBudget({ enabled: e.target.checked })}
-            className="rounded border-input"
+            className="rounded border-input cursor-pointer"
           />
           Enabled
         </label>
@@ -40,7 +40,7 @@ export function FoodBudgetForm() {
       {foodBudget.enabled && (
         <>
           {/* Weekday costs */}
-          <div>
+          <div className="pt-1">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
               Weekday Costs (Mon–Fri)
             </p>
@@ -114,7 +114,7 @@ export function FoodBudgetForm() {
           </div>
 
           {/* Summary */}
-          <div className="rounded-md bg-muted/50 p-3">
+          <div className="rounded-md bg-muted/50 p-3 -mt-5">
             <p className="text-xs font-medium text-muted-foreground">
               Estimated monthly food cost
             </p>
