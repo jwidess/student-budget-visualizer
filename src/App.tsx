@@ -136,6 +136,17 @@ export default function App() {
       <header className="border-b bg-card shadow-sm">
         <div className="max-w-screen-2xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
+            <button
+              onClick={toggleSidebar}
+              className="p-2 rounded-md hover:bg-accent hover:shadow-sm active:scale-95 transition-all cursor-pointer"
+              title="Toggle sidebar"
+            >
+              {sidebarOpen ? (
+                <PanelLeftClose className="w-5 h-5" />
+              ) : (
+                <PanelLeftOpen className="w-5 h-5" />
+              )}
+            </button>
             <DollarSign className="w-6 h-6 text-green-600" />
             <div>
               <h1 className="text-lg font-bold leading-tight">
@@ -149,17 +160,6 @@ export default function App() {
           <div className="flex items-center gap-2 flex-wrap justify-end">
             <WarningBanner />
             <OutOfRangeBanner />
-            <button
-              onClick={toggleSidebar}
-              className="p-2 rounded-md hover:bg-accent hover:shadow-sm active:scale-95 transition-all cursor-pointer lg:hidden"
-              title="Toggle sidebar"
-            >
-              {sidebarOpen ? (
-                <PanelLeftClose className="w-5 h-5" />
-              ) : (
-                <PanelLeftOpen className="w-5 h-5" />
-              )}
-            </button>
             <button
               onClick={() => {
                 if (window.confirm('Are you sure you want to reset all data to defaults? This cannot be undone.')) {
@@ -301,21 +301,6 @@ export default function App() {
 
         {/* Dashboard */}
         <main ref={mainRef} className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Toggle sidebar on desktop */}
-          <div className="hidden lg:block">
-            <button
-              onClick={toggleSidebar}
-              className="p-2 rounded-md hover:bg-accent hover:shadow-sm active:scale-95 transition-all cursor-pointer"
-              title="Toggle sidebar"
-            >
-              {sidebarOpen ? (
-                <PanelLeftClose className="w-5 h-5" />
-              ) : (
-                <PanelLeftOpen className="w-5 h-5" />
-              )}
-            </button>
-          </div>
-
           <SummaryCards />
 
           <MemoizedCharts />
