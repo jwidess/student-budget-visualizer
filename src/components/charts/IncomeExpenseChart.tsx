@@ -34,11 +34,10 @@ function aggregateMonthly(
 
   return Array.from(map.entries()).map(([month, data]) => {
     const date = new Date(month + '-01T00:00:00');
+    const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+    const year = date.getFullYear().toString().slice(-2);
     return {
-      month: date.toLocaleDateString('en-US', {
-        month: 'short',
-        year: '2-digit',
-      }),
+      month: `${monthName} '${year}`,
       income: Math.round(data.income),
       expenses: Math.round(data.expenses),
       net: Math.round(data.income - data.expenses),
