@@ -187,7 +187,7 @@ export const useBudgetStore = create<BudgetStore>()(
               id: generateId(),
               label: 'New Expense',
               amount: 500,
-              date: format(new Date(), 'yyyy-MM-dd'),
+              date: format(addDays(new Date(), 7), 'yyyy-MM-dd'),
             },
           ],
         })),

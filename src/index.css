@@ -55,6 +55,23 @@
   animation: warning-fade-in 0.4s ease-out;
 }
 
+/* Collapsible section animation */
+.section-content-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.2s ease-out, opacity 0.2s ease-out;
+  opacity: 0;
+}
+
+.section-content-wrapper.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.section-content-inner {
+  overflow: hidden;
+}
+
 /* Hide scrollbar */
 .scrollbar-hide {
   -ms-overflow-style: none;  /* IE/Edge */

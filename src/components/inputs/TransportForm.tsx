@@ -31,7 +31,7 @@ export function TransportForm() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between pt-1">
         <h3 className="text-sm font-semibold">Commuting Expenses</h3>
         <label className="inline-flex items-center gap-2 text-xs cursor-pointer">
           <input

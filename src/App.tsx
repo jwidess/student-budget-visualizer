@@ -48,7 +48,11 @@ function InputSection({ id, title, icon, openSections, onToggle, children }: Inp
           className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
-      {isOpen && <div className="px-4 pb-4">{children}</div>}
+      <div className={`section-content-wrapper ${isOpen ? 'open' : ''}`}>
+        <div className="section-content-inner">
+          <div className="px-4 pb-4 pt-2">{children}</div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -162,7 +166,7 @@ export default function App() {
         >
           <div className="w-80 h-full overflow-y-auto scrollbar-hide">
           <div className="sticky top-0 bg-card/95 backdrop-blur-sm border-b px-4 py-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-white">
               Budget Inputs
             </p>
           </div>
