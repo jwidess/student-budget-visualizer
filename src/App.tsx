@@ -8,6 +8,7 @@ import { OneTimeIncomeForm } from '@/components/inputs/OneTimeIncomeForm';
 import { RecurringExpenseForm } from '@/components/inputs/RecurringExpenseForm';
 import { OneTimeExpenseForm } from '@/components/inputs/OneTimeExpenseForm';
 import { FoodBudgetForm } from '@/components/inputs/FoodBudgetForm';
+import { TransportForm } from '@/components/inputs/TransportForm';
 import { useBudgetStore } from '@/store/budgetStore';
 import {
   DollarSign,
@@ -19,9 +20,10 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   UtensilsCrossed,
+  MapPin,
 } from 'lucide-react';
 
-type Section = 'general' | 'income' | 'one-time-income' | 'expenses' | 'one-time-expenses' | 'food';
+type Section = 'general' | 'income' | 'one-time-income' | 'expenses' | 'one-time-expenses' | 'food' | 'transport';
 
 interface InputSectionProps {
   id: Section;
@@ -170,6 +172,16 @@ export default function App() {
             onToggle={toggle}
           >
             <FoodBudgetForm />
+          </InputSection>
+
+          <InputSection
+            id="transport"
+            title="Commuting"
+            icon={<MapPin className="w-4 h-4 text-blue-500" />}
+            openSections={openSections}
+            onToggle={toggle}
+          >
+            <TransportForm />
           </InputSection>
 
           <InputSection

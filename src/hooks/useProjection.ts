@@ -14,6 +14,7 @@ export function useProjection() {
       recurringExpenses: state.recurringExpenses,
       oneTimeExpenses: state.oneTimeExpenses,
       foodBudget: state.foodBudget,
+      transportConfig: state.transportConfig,
     }))
   );
 

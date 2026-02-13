@@ -48,6 +48,21 @@ export interface FoodBudget {
   weekendDailyTotal: number;
 }
 
+// ── Transport / Commute ──
+export interface TransportConfig {
+  /** Whether transport cost tracking is enabled */
+  enabled: boolean;
+  /** Auto transit */
+  autoEnabled: boolean;
+  autoWeekdayMiles: number;
+  autoWeekendMiles: number;
+  autoMpg: number;
+  autoFuelCostPerGallon: number;
+  /** Public transit */
+  publicEnabled: boolean;
+  publicWeeklyCost: number;
+}
+
 // ── Projection output ──
 export interface DailySnapshot {
   date: string; // ISO date string
@@ -65,5 +80,6 @@ export interface BudgetConfig {
   recurringExpenses: RecurringExpense[];
   oneTimeExpenses: OneTimeExpense[];
   foodBudget: FoodBudget;
+  transportConfig: TransportConfig;
   projectionMonths: number; // how many months to project
 }

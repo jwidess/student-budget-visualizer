@@ -7,6 +7,7 @@ import type {
   RecurringExpense,
   OneTimeExpense,
   FoodBudget,
+  TransportConfig,
 } from '@/engine/types';
 import { generateId } from '@/lib/utils';
 import { format, addDays } from 'date-fns';
@@ -40,6 +41,7 @@ interface BudgetActions {
   removeOneTimeExpense: (id: string) => void;
 
   updateFoodBudget: (data: Partial<FoodBudget>) => void;
+  updateTransportConfig: (data: Partial<TransportConfig>) => void;
 
   resetAll: () => void;
 }
@@ -76,6 +78,16 @@ const defaultConfig: BudgetConfig = {
     weekdayDinner: 12,
     weekdaySnacks: 2,
     weekendDailyTotal: 25,
+  },
+  transportConfig: {
+    enabled: true,
+    autoEnabled: true,
+    autoWeekdayMiles: 20,
+    autoWeekendMiles: 10,
+    autoMpg: 30,
+    autoFuelCostPerGallon: 3.50,
+    publicEnabled: false,
+    publicWeeklyCost: 0,
   },
 };
 
@@ -189,6 +201,12 @@ export const useBudgetStore = create<BudgetStore>()(
       updateFoodBudget: (data) =>
         set((state) => ({
           foodBudget: { ...state.foodBudget, ...data },
+        })),
+
+      // ── Transport ──
+      updateTransportConfig: (data) =>
+        set((state) => ({
+          transportConfig: { ...state.transportConfig, ...data },
         })),
 
       resetAll: () => set(defaultConfig),

@@ -83,6 +83,21 @@ export function runProjection(config: BudgetConfig): DailySnapshot[] {
       }
     }
 
+    // ── Transport costs ──
+    if (config.transportConfig.enabled) {
+      if (config.transportConfig.autoEnabled && config.transportConfig.autoMpg > 0) {
+        const miles = weekend
+          ? config.transportConfig.autoWeekendMiles
+          : config.transportConfig.autoWeekdayMiles;
+        const gallons = miles / config.transportConfig.autoMpg;
+        expensesToday += gallons * config.transportConfig.autoFuelCostPerGallon;
+      }
+      if (config.transportConfig.publicEnabled) {
+        // Spread weekly cost evenly across 7 days
+        expensesToday += config.transportConfig.publicWeeklyCost / 7;
+      }
+    }
+
     // ── Recurring income ──
     for (const income of config.recurringIncomes) {
       if (isPayday(date, income)) {
