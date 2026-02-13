@@ -37,8 +37,6 @@ function niceIncrement(range: number): number {
 interface ChartDataPoint {
   date: string;
   balance: number;
-  positive: number | null;
-  negative: number | null;
   events: string[];
 }
 
@@ -46,8 +44,6 @@ function prepareChartData(snapshots: DailySnapshot[]): ChartDataPoint[] {
   return snapshots.map((s) => ({
     date: s.date,
     balance: s.balance,
-    positive: s.balance >= 0 ? s.balance : null,
-    negative: s.balance < 0 ? s.balance : null,
     events: s.events,
   }));
 }
@@ -160,6 +156,21 @@ export function CashBalanceChart() {
     return stickyDomain.current;
   }, [sampled]);
 
+  // Where zero falls as a fraction from the top of the path's bounding box.
+  // Must use actual data extents (including 0 from baseValue), NOT the padded
+  // y-axis domain, because the SVG gradient maps to the element's bounding box.
+  const zeroFraction = useMemo(() => {
+    if (sampled.length === 0) return 1;
+    const balances = sampled.map((d) => d.balance);
+    const dataMax = Math.max(...balances, 0); // 0 included because baseValue={0}
+    const dataMin = Math.min(...balances, 0);
+    if (dataMax <= 0) return 0;   // entirely negative
+    if (dataMin >= 0) return 1;   // entirely positive
+    return dataMax / (dataMax - dataMin);
+  }, [sampled]);
+
+  const pct = `${(zeroFraction * 100).toFixed(4)}%`;
+
   return (
     <div className="w-full">
       <h2 className="text-lg font-semibold mb-4">Cash Balance Over Time</h2>
@@ -169,13 +180,17 @@ export function CashBalanceChart() {
           margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
         >
           <defs>
-            <linearGradient id="colorPositive" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#22c55e" stopOpacity={0.05} />
+            {/* Fill: green above zero, red below zero */}
+            <linearGradient id="splitFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#22c55e" stopOpacity={0.25} />
+              <stop offset={pct} stopColor="#22c55e" stopOpacity={0.05} />
+              <stop offset={pct} stopColor="#ef4444" stopOpacity={0.05} />
+              <stop offset="100%" stopColor="#ef4444" stopOpacity={0.25} />
             </linearGradient>
-            <linearGradient id="colorNegative" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#ef4444" stopOpacity={0.05} />
-              <stop offset="95%" stopColor="#ef4444" stopOpacity={0.3} />
+            {/* Stroke: green above zero, red below zero */}
+            <linearGradient id="splitStroke" x1="0" y1="0" x2="0" y2="1">
+              <stop offset={pct} stopColor="#22c55e" />
+              <stop offset={pct} stopColor="#ef4444" />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
@@ -201,30 +216,29 @@ export function CashBalanceChart() {
           <ReferenceLine y={0} stroke="#888" strokeDasharray="3 3" />
           <Area
             type="monotone"
-            dataKey="positive"
-            stroke="#22c55e"
-            fill="url(#colorPositive)"
-            strokeWidth={2}
-            connectNulls={false}
-            dot={false}
-          />
-          <Area
-            type="monotone"
-            dataKey="negative"
-            stroke="#ef4444"
-            fill="url(#colorNegative)"
-            strokeWidth={2}
-            connectNulls={false}
-            dot={false}
-          />
-          {/* Full balance line for continuity */}
-          <Area
-            type="monotone"
             dataKey="balance"
-            stroke="#6366f1"
-            fill="none"
+            stroke="url(#splitStroke)"
+            fill="url(#splitFill)"
+            baseValue={0}
             strokeWidth={2}
             dot={false}
+            activeDot={(props) => {
+              const { cx = 0, cy = 0, payload } = props as { cx?: number; cy?: number; payload: ChartDataPoint };
+              const color = payload.balance >= 0 ? '#22c55e' : '#ef4444';
+              return (
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={5}
+                  fill={color}
+                  stroke="white"
+                  strokeWidth={2}
+                />
+              );
+            }}
+            isAnimationActive={true}
+            animationDuration={600}
+            animationEasing="ease-in-out"
           />
         </AreaChart>
       </ResponsiveContainer>
