@@ -66,26 +66,18 @@ export function WarningBanner() {
   const deficit = lowestPoint ? Math.abs(lowestPoint.balance) : 0;
 
   return (
-    <div className="rounded-xl border-2 border-red-400 bg-red-50 dark:bg-red-950/30 p-4 flex items-start gap-3">
-      <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
-      <div>
-        <p className="text-sm font-semibold text-red-700 dark:text-red-400">
-          Warning: Balance goes negative!
-        </p>
-        <p className="text-sm text-red-600 dark:text-red-300 mt-1">
-          At current projections, you'll run out of money on{' '}
-          <strong>{formatDate(new Date(dangerDate.date + 'T00:00:00'))}</strong>.
-          {deficit > 0 && (
-            <>
-              {' '}
-              Your lowest point is{' '}
-              <strong>{formatCurrency(-deficit)}</strong>. Consider reducing
-              expenses or adding income of at least{' '}
-              <strong>{formatCurrency(deficit)}</strong>.
-            </>
-          )}
-        </p>
-      </div>
+    <div className="flex items-center gap-2 rounded-md bg-red-100 dark:bg-red-950/50 border border-red-300 dark:border-red-800 px-3 py-1.5 text-xs text-red-700 dark:text-red-300 animate-in fade-in duration-300">
+      <AlertTriangle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+      <span>
+        <strong>Balance goes negative</strong> on{' '}
+        <strong>{formatDate(new Date(dangerDate.date + 'T00:00:00'))}</strong>
+        {deficit > 0 && (
+          <>
+            {' · Lowest: '}
+            <strong>{formatCurrency(-deficit)}</strong>
+          </>
+        )}
+      </span>
     </div>
   );
 }

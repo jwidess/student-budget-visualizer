@@ -74,7 +74,7 @@ export default function App() {
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="border-b bg-card shadow-sm">
-        <div className="max-w-screen-2xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-screen-2xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <DollarSign className="w-6 h-6 text-green-600" />
             <div>
@@ -86,7 +86,8 @@ export default function App() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <WarningBanner />
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="p-2 rounded-md hover:bg-accent transition-colors lg:hidden"
@@ -212,7 +213,6 @@ export default function App() {
             </button>
           </div>
 
-          <WarningBanner />
           <SummaryCards />
 
           <div className="rounded-xl border bg-card p-6 shadow-sm">

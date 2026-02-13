@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import {
   AreaChart,
   Area,
@@ -12,6 +12,27 @@ import {
 import { useProjection } from '@/hooks/useProjection';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { DailySnapshot } from '@/engine/types';
+
+/** Round down to nearest increment */
+function floorTo(value: number, increment: number): number {
+  return Math.floor(value / increment) * increment;
+}
+
+/** Round up to nearest increment */
+function ceilTo(value: number, increment: number): number {
+  return Math.ceil(value / increment) * increment;
+}
+
+/**
+ * Choose a nice rounding increment based on the data range.
+ * Larger ranges use $1000 steps, smaller use $500 or $250.
+ */
+function niceIncrement(range: number): number {
+  if (range > 10000) return 2000;
+  if (range > 5000) return 1000;
+  if (range > 2000) return 500;
+  return 250;
+}
 
 interface ChartDataPoint {
   date: string;
@@ -99,6 +120,46 @@ export function CashBalanceChart() {
     return result;
   }, [data]);
 
+  // ── Sticky Y-axis domain ──
+  // Only expands when data exceeds current bounds; prevents misleading
+  // visual shifts when small input changes cause axis rescaling.
+  const stickyDomain = useRef<[number, number] | null>(null);
+
+  const yDomain = useMemo(() => {
+    if (sampled.length === 0) return [0, 1000] as [number, number];
+
+    const balances = sampled.map((d) => d.balance);
+    const dataMin = Math.min(...balances);
+    const dataMax = Math.max(...balances);
+    const range = dataMax - dataMin;
+    const inc = niceIncrement(range);
+    const padding = inc; // one full increment of padding
+
+    // Calculate the "ideal" domain for current data
+    const idealMin = floorTo(dataMin - padding, inc);
+    const idealMax = ceilTo(dataMax + padding, inc);
+
+    const prev = stickyDomain.current;
+    if (prev) {
+      // Expand bounds if data exceeds them; otherwise keep stable
+      const newMin = Math.min(prev[0], idealMin);
+      const newMax = Math.max(prev[1], idealMax);
+
+      // Allow bounds to tighten if data has moved far from the edges
+      // (more than 3× padding away), so the chart isn't stuck at old extremes forever
+      const shrinkMin =
+        dataMin - prev[0] > padding * 3 ? idealMin : newMin;
+      const shrinkMax =
+        prev[1] - dataMax > padding * 3 ? idealMax : newMax;
+
+      stickyDomain.current = [shrinkMin, shrinkMax];
+    } else {
+      stickyDomain.current = [idealMin, idealMax];
+    }
+
+    return stickyDomain.current;
+  }, [sampled]);
+
   return (
     <div className="w-full">
       <h2 className="text-lg font-semibold mb-4">Cash Balance Over Time</h2>
@@ -131,6 +192,7 @@ export function CashBalanceChart() {
             fontSize={12}
           />
           <YAxis
+            domain={yDomain}
             tickFormatter={(v: number) => formatCurrency(v)}
             fontSize={12}
             width={80}
