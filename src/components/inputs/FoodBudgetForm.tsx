@@ -37,10 +37,10 @@ export function FoodBudgetForm() {
         </p>
       )}
 
-      {foodBudget.enabled && (
-        <>
-          {/* Weekday costs */}
-          <div className="pt-1">
+      {/* Always show content, but grey out when disabled */}
+      <div className={!foodBudget.enabled ? 'opacity-50 pointer-events-none' : ''}>
+        {/* Weekday costs */}
+        <div className="pt-1">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
               Weekday Costs (Mon–Fri)
             </p>
@@ -113,17 +113,16 @@ export function FoodBudgetForm() {
             </div>
           </div>
 
-          {/* Summary */}
-          <div className="rounded-md bg-muted/50 p-3 -mt-5">
-            <p className="text-xs font-medium text-muted-foreground">
-              Estimated monthly food cost
-            </p>
-            <p className="text-sm font-bold mt-0.5">
-              ≈ {formatCurrency(Math.round(estimatedMonthly))}
-            </p>
-          </div>
-        </>
-      )}
+        {/* Summary */}
+        <div className="rounded-md bg-muted/50 p-3">
+          <p className="text-xs font-medium text-muted-foreground">
+            Estimated monthly food cost
+          </p>
+          <p className="text-sm font-bold mt-0.5">
+            ≈ {formatCurrency(Math.round(estimatedMonthly))}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

@@ -52,36 +52,36 @@ export function TransportForm() {
         </p>
       )}
 
-      {transportConfig.enabled && (
-        <>
-          {/* Auto Transit */}
-          <div className="rounded-lg border border-input overflow-hidden pt-1">
-            <button
-              onClick={() => setAutoOpen((o) => !o)}
-              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium hover:bg-accent hover:shadow-sm transition-all cursor-pointer"
+      {/* Always show content, but grey out when disabled */}
+      <div className={!transportConfig.enabled ? 'opacity-50 pointer-events-none' : ''}>
+        {/* Auto Transit */}
+        <div className="rounded-lg border border-input overflow-hidden pt-1">
+          <button
+            onClick={() => setAutoOpen((o) => !o)}
+            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium hover:bg-accent hover:shadow-sm transition-all cursor-pointer"
+          >
+            <Car className="w-4 h-4 text-blue-500" />
+            <span className="flex-1 text-left">Auto Transit</span>
+            <label
+              className="inline-flex items-center gap-1.5 text-xs cursor-pointer"
+              onClick={(e) => e.stopPropagation()}
             >
-              <Car className="w-4 h-4 text-blue-500" />
-              <span className="flex-1 text-left">Auto Transit</span>
-              <label
-                className="inline-flex items-center gap-1.5 text-xs cursor-pointer"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <input
-                  type="checkbox"
-                  checked={transportConfig.autoEnabled}
-                  onChange={(e) => {
-                    updateTransportConfig({ autoEnabled: e.target.checked });
-                    if (e.target.checked) setAutoOpen(true);
-                  }}
-                  className="rounded border-input cursor-pointer"
-                />
-              </label>
-              <ChevronDown
-                className={`w-3.5 h-3.5 transition-transform ${autoOpen ? 'rotate-180' : ''}`}
+              <input
+                type="checkbox"
+                checked={transportConfig.autoEnabled}
+                onChange={(e) => {
+                  updateTransportConfig({ autoEnabled: e.target.checked });
+                  if (e.target.checked) setAutoOpen(true);
+                }}
+                className="rounded border-input cursor-pointer"
               />
-            </button>
-            {autoOpen && (
-              <div className="px-3 pb-3 space-y-3 border-t">
+            </label>
+            <ChevronDown
+              className={`w-3.5 h-3.5 transition-transform ${autoOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
+          {autoOpen && (
+            <div className={`px-3 pb-3 space-y-3 border-t ${!transportConfig.autoEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
                 <div className="grid grid-cols-2 gap-3 mt-3">
                   <div>
                     <label className="block text-xs text-muted-foreground mb-1">
@@ -174,7 +174,7 @@ export function TransportForm() {
               />
             </button>
             {publicOpen && (
-              <div className="px-3 pb-3 space-y-3 border-t">
+              <div className={`px-3 pb-3 space-y-3 border-t ${!transportConfig.publicEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
                 <div className="mt-3">
                   <label className="block text-xs text-muted-foreground mb-1">
                     Average weekly cost ($)
@@ -197,17 +197,16 @@ export function TransportForm() {
             )}
           </div>
 
-          {/* Summary */}
-          <div className="rounded-md bg-muted/50 p-3 -mt-5">
-            <p className="text-xs font-medium text-muted-foreground">
-              Estimated monthly commuting cost
-            </p>
-            <p className="text-sm font-bold mt-0.5">
-              ≈ {formatCurrency(Math.round(monthlyTotal))}
-            </p>
-          </div>
-        </>
-      )}
+        {/* Summary */}
+        <div className="rounded-md bg-muted/50 p-3">
+          <p className="text-xs font-medium text-muted-foreground">
+            Estimated monthly commuting cost
+          </p>
+          <p className="text-sm font-bold mt-0.5">
+            ≈ {formatCurrency(Math.round(monthlyTotal))}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

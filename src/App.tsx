@@ -100,7 +100,11 @@ export default function App() {
               )}
             </button>
             <button
-              onClick={resetAll}
+              onClick={() => {
+                if (window.confirm('Are you sure you want to reset all data to defaults? This cannot be undone.')) {
+                  resetAll();
+                }
+              }}
               className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent hover:shadow-sm active:scale-95 transition-all cursor-pointer"
               title="Reset all data to defaults"
             >
