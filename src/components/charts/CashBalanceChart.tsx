@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { useMemo, useRef, useState, useEffect, useLayoutEffect } from 'react';
 import {
   AreaChart,
   Area,
@@ -8,6 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  ReferenceDot,
 } from 'recharts';
 import { useProjection } from '@/hooks/useProjection';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -43,13 +44,17 @@ interface ChartDataPoint {
   date: string;
   balance: number;
   events: DailyEvent[];
+  isMin?: boolean;
+  isMax?: boolean;
 }
 
-function prepareChartData(snapshots: DailySnapshot[]): ChartDataPoint[] {
-  return snapshots.map((s) => ({
+function prepareChartData(snapshots: DailySnapshot[], minIdx: number, maxIdx: number): ChartDataPoint[] {
+  return snapshots.map((s, i) => ({
     date: s.date,
     balance: s.balance,
     events: s.events,
+    isMin: i === minIdx,
+    isMax: i === maxIdx,
   }));
 }
 
@@ -65,7 +70,17 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
   const data = payload[0].payload;
   return (
     <div className="rounded-lg border border-gray-200 p-3 shadow-lg" style={{ opacity: 1, backgroundColor: 'white' }}>
-      <p className="text-sm font-medium">{formatDate(new Date(data.date + 'T00:00:00'))}</p>
+      <p className="text-sm font-medium">
+        {formatDate(new Date(data.date + 'T00:00:00'))}
+        {data.isMax && (
+          <span className="ml-2 inline-flex items-center rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-semibold text-green-700">▲ Highest</span>
+        )}
+        {data.isMin && (
+          <span className={`ml-2 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+            data.balance >= 0 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+          }`}>▼ Lowest</span>
+        )}
+      </p>
       <p
         className={`text-lg font-bold ${
           data.balance >= 0 ? 'text-green-600' : 'text-red-600'
@@ -93,10 +108,26 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
 
 export function CashBalanceChart() {
   const { snapshots } = useProjection();
-  const data = prepareChartData(snapshots);
+
+  // Find the indices of the lowest and highest balance days across ALL data
+  // so we can always include them in the sampled set and highlight them.
+  const { minIdx, maxIdx } = useMemo(() => {
+    if (snapshots.length === 0) return { minIdx: 0, maxIdx: 0 };
+    let mi = 0, ma = 0;
+    for (let i = 1; i < snapshots.length; i++) {
+      if (snapshots[i]!.balance < snapshots[mi]!.balance) mi = i; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+      if (snapshots[i]!.balance > snapshots[ma]!.balance) ma = i; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    }
+    return { minIdx: mi, maxIdx: ma };
+  }, [snapshots]);
+
+  const data = useMemo(
+    () => prepareChartData(snapshots, minIdx, maxIdx),
+    [snapshots, minIdx, maxIdx]
+  );
 
   // Smart sampling: always include days with events (expenses/income),
-  // plus enough regular points for a smooth line
+  // the min/max balance days, plus enough regular points for a smooth line
   const sampled = useMemo(() => {
     if (data.length <= 180) return data; // Under 6 months: show all days
 
@@ -108,6 +139,10 @@ export function CashBalanceChart() {
     data.forEach((d, i) => {
       if (d.events.length > 0) included.add(i);
     });
+
+    // Always include min and max balance days
+    included.add(minIdx);
+    included.add(maxIdx);
 
     // Add regularly spaced points for smooth curve
     for (let i = 0; i < data.length; i += step) {
@@ -124,7 +159,7 @@ export function CashBalanceChart() {
       if (point) result.push(point);
     }
     return result;
-  }, [data]);
+  }, [data, minIdx, maxIdx]);
 
   // ── Sticky Y-axis domain ──
   // Only expands when data exceeds current bounds; prevents misleading
@@ -186,6 +221,11 @@ export function CashBalanceChart() {
   const gradientY1 = MARGIN.top;
   const gradientY2 = CHART_HEIGHT - MARGIN.bottom - XAXIS_HEIGHT;
 
+  // Delay showing min/max highlight dots until the Area's draw animation
+  // has finished, so they fade in rather than jumping ahead of the line.
+  const ANIM_DURATION = 600;
+  const [dotsVisible, setDotsVisible] = useState(true);
+
   // Track raw data length changes to trigger a fade transition when projection months changes.
   // We use data.length (total projection days) instead of sampled.length, because the
   // sampling step can produce slightly different counts when event days shift that
@@ -193,11 +233,15 @@ export function CashBalanceChart() {
   const [chartKey, setChartKey] = useState(0);
   const [fading, setFading] = useState(false);
   const prevLengthRef = useRef(data.length);
+  // Track previous data reference to avoid effect on initial mount
+  const prevDataRef = useRef(data);
 
+  // Handle projection length changes (fade out & remount)
   useEffect(() => {
     if (data.length !== prevLengthRef.current) {
       prevLengthRef.current = data.length;
       setFading(true);
+      setDotsVisible(false);
       // Brief fade-out, then swap key to re-mount chart with animation
       const timer = setTimeout(() => {
         setChartKey((k) => k + 1);
@@ -206,6 +250,32 @@ export function CashBalanceChart() {
       return () => clearTimeout(timer);
     }
   }, [data.length]);
+
+  // Handle value changes without length change (hide dots during transition)
+  useLayoutEffect(() => {
+    // Skip if data hasn't changed reference (should be handled by dep array, but safety check)
+    if (data === prevDataRef.current) return;
+    prevDataRef.current = data;
+
+    // If length hasn't changed but data has, it's a value update.
+    // We hide dots immediately so they don't jump, let the chart animate, then fade them back in.
+    if (data.length === prevLengthRef.current) {
+      setDotsVisible(false);
+      const timer = setTimeout(() => {
+        setDotsVisible(true);
+      }, ANIM_DURATION);
+      return () => clearTimeout(timer);
+    }
+  }, [data]);
+
+  // After a chart re-mount (chartKey change), wait for the Area animation
+  // to finish before fading in the dots.
+  useEffect(() => {
+    if (!dotsVisible) {
+      const timer = setTimeout(() => setDotsVisible(true), ANIM_DURATION + 150);
+      return () => clearTimeout(timer);
+    }
+  }, [chartKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="w-full">
@@ -255,6 +325,48 @@ export function CashBalanceChart() {
           />
           <Tooltip content={<CustomTooltip />} />
           <ReferenceLine y={0} stroke="#888" strokeDasharray="3 3" />
+          {/* Min/max highlight dots — only rendered after area animation finishes */}
+          {dotsVisible && data.length > 0 && (
+            <ReferenceDot
+              x={data[maxIdx]!.date}
+              y={data[maxIdx]!.balance}
+              r={5}
+              fill="#22c55e"
+              stroke="white"
+              strokeWidth={2}
+              shape={(props: Record<string, unknown>) => {
+                const { cx, cy } = props as { cx: number; cy: number };
+                return (
+                  <circle
+                    cx={cx} cy={cy} r={5}
+                    fill="#22c55e" stroke="white" strokeWidth={2}
+                    className="animate-fade-in"
+                  />
+                );
+              }}
+            />
+          )}
+          {dotsVisible && data.length > 0 && (
+            <ReferenceDot
+              x={data[minIdx]!.date}
+              y={data[minIdx]!.balance}
+              r={5}
+              fill={data[minIdx]!.balance >= 0 ? '#f59e0b' : '#ef4444'}
+              stroke="white"
+              strokeWidth={2}
+              shape={(props: Record<string, unknown>) => {
+                const { cx, cy } = props as { cx: number; cy: number };
+                const fill = data[minIdx]!.balance >= 0 ? '#f59e0b' : '#ef4444';
+                return (
+                  <circle
+                    cx={cx} cy={cy} r={5}
+                    fill={fill} stroke="white" strokeWidth={2}
+                    className="animate-fade-in"
+                  />
+                );
+              }}
+            />
+          )}
           <Area
             type="monotone"
             dataKey="balance"
