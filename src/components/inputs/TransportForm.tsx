@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useBudgetStore } from '@/store/budgetStore';
 import { DebouncedNumberInput } from './DebouncedNumberInput';
 import { formatCurrency } from '@/lib/utils';
+import { WEEKDAYS_PER_MONTH, WEEKEND_DAYS_PER_MONTH, WEEKS_PER_MONTH } from '@/lib/constants';
 import { ChevronDown, Car, TrainFront } from 'lucide-react';
 import { Tooltip } from '@/components/Tooltip';
 
@@ -22,9 +23,9 @@ export function TransportForm() {
         transportConfig.autoFuelCostPerGallon
       : 0;
   const monthlyAuto =
-    weekdayFuelCost * ((52 * 5) / 12) + weekendFuelCost * ((52 * 2) / 12);
+    weekdayFuelCost * WEEKDAYS_PER_MONTH + weekendFuelCost * WEEKEND_DAYS_PER_MONTH;
 
-  const monthlyPublic = transportConfig.publicWeeklyCost * (52 / 12);
+  const monthlyPublic = transportConfig.publicWeeklyCost * WEEKS_PER_MONTH;
 
   const monthlyTotal =
     (transportConfig.autoEnabled ? monthlyAuto : 0) +

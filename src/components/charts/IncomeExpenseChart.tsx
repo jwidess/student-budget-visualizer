@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useMemo } from 'react';
 import {
   BarChart,
   Bar,
@@ -10,7 +10,9 @@ import {
   Legend,
 } from 'recharts';
 import { useProjection } from '@/hooks/useProjection';
+import { useChartFadeTransition } from '@/hooks/useChartFadeTransition';
 import { formatCurrency } from '@/lib/utils';
+import { CHART_COLORS } from '@/lib/constants';
 
 interface MonthlyData {
   month: string;
@@ -71,24 +73,9 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
 
 export function IncomeExpenseChart() {
   const { snapshots } = useProjection();
-  const data = aggregateMonthly(snapshots);
+  const data = useMemo(() => aggregateMonthly(snapshots), [snapshots]);
 
-  // Track data length changes to trigger a fade transition when projection months changes
-  const [chartKey, setChartKey] = useState(0);
-  const [fading, setFading] = useState(false);
-  const prevLengthRef = useRef(data.length);
-
-  useEffect(() => {
-    if (data.length !== prevLengthRef.current) {
-      prevLengthRef.current = data.length;
-      setFading(true);
-      const timer = setTimeout(() => {
-        setChartKey((k) => k + 1);
-        setFading(false);
-      }, 150);
-      return () => clearTimeout(timer);
-    }
-  }, [data.length]);
+  const { chartKey, fading } = useChartFadeTransition(data.length);
 
   return (
     <div className="w-full">
@@ -104,8 +91,8 @@ export function IncomeExpenseChart() {
           <YAxis tickFormatter={(v: number) => formatCurrency(v)} fontSize={12} width={80} />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
-          <Bar dataKey="income" name="Income" fill="#22c55e" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="income" name="Income" fill={CHART_COLORS.positive} radius={[4, 4, 0, 0]} />
+          <Bar dataKey="expenses" name="Expenses" fill={CHART_COLORS.negative} radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
       </div>

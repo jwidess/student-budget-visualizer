@@ -11,7 +11,15 @@ import {
   ReferenceDot,
 } from 'recharts';
 import { useProjection } from '@/hooks/useProjection';
+import { useChartFadeTransition } from '@/hooks/useChartFadeTransition';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import {
+  CHART_ANIM_DURATION,
+  CHART_FADE_OUT_DELAY,
+  CHART_COLORS,
+  MAX_SAMPLE_POINTS,
+  XAXIS_TICK_COUNT,
+} from '@/lib/constants';
 import type { DailySnapshot, DailyEvent } from '@/engine/types';
 
 /** Round down to nearest increment */
@@ -129,9 +137,9 @@ export function CashBalanceChart() {
   // Smart sampling: always include days with events (expenses/income),
   // the min/max balance days, plus enough regular points for a smooth line
   const sampled = useMemo(() => {
-    if (data.length <= 180) return data; // Under 6 months: show all days
+    if (data.length <= MAX_SAMPLE_POINTS) return data;
 
-    const step = Math.max(2, Math.floor(data.length / 180));
+    const step = Math.max(2, Math.floor(data.length / MAX_SAMPLE_POINTS));
     const result: ChartDataPoint[] = [];
     const included = new Set<number>();
 
@@ -221,58 +229,37 @@ export function CashBalanceChart() {
   const gradientY1 = MARGIN.top;
   const gradientY2 = CHART_HEIGHT - MARGIN.bottom - XAXIS_HEIGHT;
 
-  // Delay showing min/max highlight dots until the Area's draw animation
-  // has finished, so they fade in rather than jumping ahead of the line.
-  const ANIM_DURATION = 600;
+  // ── Dot visibility & chart transition management ──
   const [dotsVisible, setDotsVisible] = useState(true);
-
-  // Track raw data length changes to trigger a fade transition when projection months changes.
-  // We use data.length (total projection days) instead of sampled.length, because the
-  // sampling step can produce slightly different counts when event days shift that
-  // would falsely trigger a full re-mount and kill the smooth Recharts animation.
-  const [chartKey, setChartKey] = useState(0);
-  const [fading, setFading] = useState(false);
-  const prevLengthRef = useRef(data.length);
-  // Track previous data reference to avoid effect on initial mount
   const prevDataRef = useRef(data);
 
-  // Handle projection length changes (fade out & remount)
-  useEffect(() => {
-    if (data.length !== prevLengthRef.current) {
-      prevLengthRef.current = data.length;
-      setFading(true);
-      setDotsVisible(false);
-      // Brief fade-out, then swap key to re-mount chart with animation
-      const timer = setTimeout(() => {
-        setChartKey((k) => k + 1);
-        setFading(false);
-      }, 150);
-      return () => clearTimeout(timer);
-    }
-  }, [data.length]);
+  // Fade-out / re-mount when projection length changes.
+  // We track data.length (total projection days) instead of sampled.length,
+  // because the sampling step can produce slightly different counts when event
+  // days shift — that would falsely trigger a full re-mount.
+  const { chartKey, fading, prevLengthRef } = useChartFadeTransition(
+    data.length,
+    () => setDotsVisible(false),
+  );
 
   // Handle value changes without length change (hide dots during transition)
   useLayoutEffect(() => {
-    // Skip if data hasn't changed reference (should be handled by dep array, but safety check)
     if (data === prevDataRef.current) return;
     prevDataRef.current = data;
 
-    // If length hasn't changed but data has, it's a value update.
-    // We hide dots immediately so they don't jump, let the chart animate, then fade them back in.
+    // Length unchanged → value-only update: hide dots while the line animates
     if (data.length === prevLengthRef.current) {
       setDotsVisible(false);
-      const timer = setTimeout(() => {
-        setDotsVisible(true);
-      }, ANIM_DURATION);
+      const timer = setTimeout(() => setDotsVisible(true), CHART_ANIM_DURATION);
       return () => clearTimeout(timer);
     }
-  }, [data]);
+  }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // After a chart re-mount (chartKey change), wait for the Area animation
   // to finish before fading in the dots.
   useEffect(() => {
     if (!dotsVisible) {
-      const timer = setTimeout(() => setDotsVisible(true), ANIM_DURATION + 150);
+      const timer = setTimeout(() => setDotsVisible(true), CHART_ANIM_DURATION + CHART_FADE_OUT_DELAY);
       return () => clearTimeout(timer);
     }
   }, [chartKey]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -292,15 +279,15 @@ export function CashBalanceChart() {
           <defs>
             {/* Fill: green above zero, red below zero (userSpaceOnUse = pixel coords) */}
             <linearGradient id="splitFill" x1="0" y1={gradientY1} x2="0" y2={gradientY2} gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#22c55e" stopOpacity={0.25} />
-              <stop offset={pct} stopColor="#22c55e" stopOpacity={0.05} />
-              <stop offset={pct} stopColor="#ef4444" stopOpacity={0.05} />
-              <stop offset="100%" stopColor="#ef4444" stopOpacity={0.25} />
+              <stop offset="0%" stopColor={CHART_COLORS.positive} stopOpacity={0.25} />
+              <stop offset={pct} stopColor={CHART_COLORS.positive} stopOpacity={0.05} />
+              <stop offset={pct} stopColor={CHART_COLORS.negative} stopOpacity={0.05} />
+              <stop offset="100%" stopColor={CHART_COLORS.negative} stopOpacity={0.25} />
             </linearGradient>
             {/* Stroke: green above zero, red below zero */}
             <linearGradient id="splitStroke" x1="0" y1={gradientY1} x2="0" y2={gradientY2} gradientUnits="userSpaceOnUse">
-              <stop offset={pct} stopColor="#22c55e" />
-              <stop offset={pct} stopColor="#ef4444" />
+              <stop offset={pct} stopColor={CHART_COLORS.positive} />
+              <stop offset={pct} stopColor={CHART_COLORS.negative} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
@@ -313,7 +300,7 @@ export function CashBalanceChart() {
                 day: 'numeric',
               });
             }}
-            interval={Math.floor(data.length / 8)}
+            interval={Math.floor(data.length / XAXIS_TICK_COUNT)}
             fontSize={12}
             height={XAXIS_HEIGHT}
           />
@@ -324,14 +311,14 @@ export function CashBalanceChart() {
             width={80}
           />
           <Tooltip content={<CustomTooltip />} />
-          <ReferenceLine y={0} stroke="#888" strokeDasharray="3 3" />
+          <ReferenceLine y={0} stroke={CHART_COLORS.zeroLine} strokeDasharray="3 3" />
           {/* Min/max highlight dots — only rendered after area animation finishes */}
           {dotsVisible && data.length > 0 && (
             <ReferenceDot
               x={data[maxIdx]!.date}
               y={data[maxIdx]!.balance}
               r={5}
-              fill="#22c55e"
+              fill={CHART_COLORS.positive}
               stroke="white"
               strokeWidth={2}
               shape={(props: Record<string, unknown>) => {
@@ -339,7 +326,7 @@ export function CashBalanceChart() {
                 return (
                   <circle
                     cx={cx} cy={cy} r={5}
-                    fill="#22c55e" stroke="white" strokeWidth={2}
+                    fill={CHART_COLORS.positive} stroke="white" strokeWidth={2}
                     className="animate-fade-in"
                   />
                 );
@@ -351,12 +338,12 @@ export function CashBalanceChart() {
               x={data[minIdx]!.date}
               y={data[minIdx]!.balance}
               r={5}
-              fill={data[minIdx]!.balance >= 0 ? '#f59e0b' : '#ef4444'}
+              fill={data[minIdx]!.balance >= 0 ? CHART_COLORS.warning : CHART_COLORS.negative}
               stroke="white"
               strokeWidth={2}
               shape={(props: Record<string, unknown>) => {
                 const { cx, cy } = props as { cx: number; cy: number };
-                const fill = data[minIdx]!.balance >= 0 ? '#f59e0b' : '#ef4444';
+                const fill = data[minIdx]!.balance >= 0 ? CHART_COLORS.warning : CHART_COLORS.negative;
                 return (
                   <circle
                     cx={cx} cy={cy} r={5}
@@ -377,7 +364,7 @@ export function CashBalanceChart() {
             dot={false}
             activeDot={(props) => {
               const { cx = 0, cy = 0, payload } = props as { cx?: number; cy?: number; payload: ChartDataPoint };
-              const color = payload.balance >= 0 ? '#22c55e' : '#ef4444';
+              const color = payload.balance >= 0 ? CHART_COLORS.positive : CHART_COLORS.negative;
               return (
                 <circle
                   cx={cx}
@@ -390,7 +377,7 @@ export function CashBalanceChart() {
               );
             }}
             isAnimationActive={true}
-            animationDuration={600}
+            animationDuration={CHART_ANIM_DURATION}
             animationEasing="ease-in-out"
           />
         </AreaChart>

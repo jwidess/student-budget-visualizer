@@ -14,6 +14,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { HelpModal } from '@/components/HelpModal';
 import { useBudgetStore } from '@/store/budgetStore';
 import { budgetTemplates } from '@/store/templates';
+import { WEEKDAYS_PER_MONTH, WEEKEND_DAYS_PER_MONTH, WEEKS_PER_MONTH } from '@/lib/constants';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import {
   DollarSign,
@@ -126,7 +127,7 @@ export default function App() {
     foodBudget.weekdayDinner +
     foodBudget.weekdaySnacks;
   const monthlyFoodCost = foodBudget.enabled
-    ? weekdayFoodDaily * (52 * 5 / 12) + foodBudget.weekendDailyTotal * (52 * 2 / 12)
+    ? weekdayFoodDaily * WEEKDAYS_PER_MONTH + foodBudget.weekendDailyTotal * WEEKEND_DAYS_PER_MONTH
     : 0;
 
   const weekdayFuelCost =
@@ -140,8 +141,8 @@ export default function App() {
         transportConfig.autoFuelCostPerGallon
       : 0;
   const monthlyAutoTransport =
-    weekdayFuelCost * ((52 * 5) / 12) + weekendFuelCost * ((52 * 2) / 12);
-  const monthlyPublicTransport = transportConfig.publicWeeklyCost * (52 / 12);
+    weekdayFuelCost * WEEKDAYS_PER_MONTH + weekendFuelCost * WEEKEND_DAYS_PER_MONTH;
+  const monthlyPublicTransport = transportConfig.publicWeeklyCost * WEEKS_PER_MONTH;
   const monthlyCommutingCost = transportConfig.enabled
     ? (transportConfig.autoEnabled ? monthlyAutoTransport : 0) +
       (transportConfig.publicEnabled ? monthlyPublicTransport : 0)

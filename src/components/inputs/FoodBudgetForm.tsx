@@ -1,6 +1,7 @@
 import { useBudgetStore } from '@/store/budgetStore';
 import { DebouncedNumberInput } from './DebouncedNumberInput';
 import { formatCurrency } from '@/lib/utils';
+import { WEEKDAYS_PER_MONTH, WEEKEND_DAYS_PER_MONTH } from '@/lib/constants';
 import { Tooltip } from '@/components/Tooltip';
 
 export function FoodBudgetForm() {
@@ -14,8 +15,8 @@ export function FoodBudgetForm() {
 
   // ~4.35 weeks/month, 5 weekdays + 2 weekend days
   const estimatedMonthly =
-    weekdayDaily * (52 * 5 / 12) +
-    foodBudget.weekendDailyTotal * (52 * 2 / 12);
+    weekdayDaily * WEEKDAYS_PER_MONTH +
+    foodBudget.weekendDailyTotal * WEEKEND_DAYS_PER_MONTH;
 
   return (
     <div className="space-y-4">
