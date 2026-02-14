@@ -11,6 +11,7 @@ import { FoodBudgetForm } from '@/components/inputs/FoodBudgetForm';
 import { TransportForm } from '@/components/inputs/TransportForm';
 import { RotateDevicePrompt } from '@/components/RotateDevicePrompt';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { HelpModal } from '@/components/HelpModal';
 import { useBudgetStore } from '@/store/budgetStore';
 import { budgetTemplates } from '@/store/templates';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
@@ -404,6 +405,9 @@ export default function App() {
           <MemoizedCharts />
         </main>
       </div>
+
+      {/* Help Modal */}
+      <HelpModal />
 
       {/* Confirmation Dialog */}
       <ConfirmDialog
