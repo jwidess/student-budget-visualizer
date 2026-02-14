@@ -260,7 +260,7 @@ export function CashBalanceChart() {
             dataKey="balance"
             stroke="url(#splitStroke)"
             fill="url(#splitFill)"
-            baseValue={0}
+            baseValue={Math.max(0, yDomain[0])}
             strokeWidth={2}
             dot={false}
             activeDot={(props) => {
