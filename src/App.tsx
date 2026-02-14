@@ -37,9 +37,10 @@ interface InputSectionProps {
   children: React.ReactNode;
   hasWarning?: boolean;
   isInactive?: boolean;
+  summaryAmount?: number;
 }
 
-function InputSection({ id, title, icon, openSections, onToggle, children, hasWarning, isInactive }: InputSectionProps) {
+function InputSection({ id, title, icon, openSections, onToggle, children, hasWarning, isInactive, summaryAmount }: InputSectionProps) {
   const isOpen = openSections.has(id);
   return (
     <div className="border-b border-border last:border-b-0">
@@ -53,6 +54,11 @@ function InputSection({ id, title, icon, openSections, onToggle, children, hasWa
       >
         {icon}
         <span className="flex-1 text-left">{title}</span>
+        {summaryAmount !== undefined && (
+          <span className="text-xs italic text-slate-600">
+            ${summaryAmount.toFixed(2)}/mo
+          </span>
+        )}
         <ChevronDown
           className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
@@ -98,6 +104,36 @@ export default function App() {
 
   // Use centralized out-of-range detection
   const { hasOutOfRangeRecurring, hasOutOfRangeIncomes, hasOutOfRangeExpenses } = useOutOfRangeDetection();
+
+  // Calculate summary amounts for section headers
+  const monthlyExpensesTotal = recurringExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+
+  const weekdayFoodDaily =
+    foodBudget.weekdayBreakfast +
+    foodBudget.weekdayLunch +
+    foodBudget.weekdayDinner +
+    foodBudget.weekdaySnacks;
+  const monthlyFoodCost = foodBudget.enabled
+    ? weekdayFoodDaily * (52 * 5 / 12) + foodBudget.weekendDailyTotal * (52 * 2 / 12)
+    : 0;
+
+  const weekdayFuelCost =
+    transportConfig.autoMpg > 0
+      ? (transportConfig.autoWeekdayMiles / transportConfig.autoMpg) *
+        transportConfig.autoFuelCostPerGallon
+      : 0;
+  const weekendFuelCost =
+    transportConfig.autoMpg > 0
+      ? (transportConfig.autoWeekendMiles / transportConfig.autoMpg) *
+        transportConfig.autoFuelCostPerGallon
+      : 0;
+  const monthlyAutoTransport =
+    weekdayFuelCost * ((52 * 5) / 12) + weekendFuelCost * ((52 * 2) / 12);
+  const monthlyPublicTransport = transportConfig.publicWeeklyCost * (52 / 12);
+  const monthlyCommutingCost = transportConfig.enabled
+    ? (transportConfig.autoEnabled ? monthlyAutoTransport : 0) +
+      (transportConfig.publicEnabled ? monthlyPublicTransport : 0)
+    : 0;
 
   // Freeze the main content width during sidebar animation so
   // ResponsiveContainer doesn't re-render charts on every frame.
@@ -297,6 +333,7 @@ export default function App() {
             openSections={openSections}
             onToggle={toggle}
             isInactive={recurringExpenses.length === 0}
+            summaryAmount={monthlyExpensesTotal}
           >
             <RecurringExpenseForm />
           </InputSection>
@@ -308,6 +345,7 @@ export default function App() {
             openSections={openSections}
             onToggle={toggle}
             isInactive={!foodBudget.enabled}
+            summaryAmount={monthlyFoodCost}
           >
             <FoodBudgetForm />
           </InputSection>
@@ -319,6 +357,7 @@ export default function App() {
             openSections={openSections}
             onToggle={toggle}
             isInactive={!transportConfig.enabled}
+            summaryAmount={monthlyCommutingCost}
           >
             <TransportForm />
           </InputSection>

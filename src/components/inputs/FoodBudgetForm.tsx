@@ -97,7 +97,7 @@ export function FoodBudgetForm() {
 
           {/* Weekend costs */}
           <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 mt-4">
               Weekend Costs (Sat–Sun)
             </p>
             <div>
