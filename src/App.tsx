@@ -36,9 +36,10 @@ interface InputSectionProps {
   onToggle: (id: Section) => void;
   children: React.ReactNode;
   hasWarning?: boolean;
+  isInactive?: boolean;
 }
 
-function InputSection({ id, title, icon, openSections, onToggle, children, hasWarning }: InputSectionProps) {
+function InputSection({ id, title, icon, openSections, onToggle, children, hasWarning, isInactive }: InputSectionProps) {
   const isOpen = openSections.has(id);
   return (
     <div className="border-b border-border last:border-b-0">
@@ -46,6 +47,8 @@ function InputSection({ id, title, icon, openSections, onToggle, children, hasWa
         onClick={() => onToggle(id)}
         className={`w-full flex items-center gap-2 px-4 py-3 text-sm font-medium hover:bg-accent hover:shadow-sm transition-all cursor-pointer ${
           hasWarning ? 'bg-orange-100 border-l-4 border-l-orange-500' : ''
+        } ${
+          isInactive ? 'opacity-50 bg-gray-100' : ''
         }`}
       >
         {icon}
@@ -84,6 +87,14 @@ export default function App() {
   const resetAll = useBudgetStore((s) => s.resetAll);
   const applyTemplate = useBudgetStore((s) => s.applyTemplate);
   const mainRef = useRef<HTMLElement>(null);
+
+  // Get state for determining if sections are inactive
+  const recurringIncomes = useBudgetStore((s) => s.recurringIncomes);
+  const oneTimeIncomes = useBudgetStore((s) => s.oneTimeIncomes);
+  const oneTimeExpenses = useBudgetStore((s) => s.oneTimeExpenses);
+  const recurringExpenses = useBudgetStore((s) => s.recurringExpenses);
+  const foodBudget = useBudgetStore((s) => s.foodBudget);
+  const transportConfig = useBudgetStore((s) => s.transportConfig);
 
   // Use centralized out-of-range detection
   const { hasOutOfRangeRecurring, hasOutOfRangeIncomes, hasOutOfRangeExpenses } = useOutOfRangeDetection();
@@ -250,6 +261,7 @@ export default function App() {
             openSections={openSections}
             onToggle={toggle}
             hasWarning={hasOutOfRangeRecurring}
+            isInactive={recurringIncomes.length === 0}
           >
             <IncomeForm />
           </InputSection>
@@ -261,6 +273,7 @@ export default function App() {
             openSections={openSections}
             onToggle={toggle}
             hasWarning={hasOutOfRangeIncomes}
+            isInactive={oneTimeIncomes.length === 0}
           >
             <OneTimeIncomeForm />
           </InputSection>
@@ -272,6 +285,7 @@ export default function App() {
             openSections={openSections}
             onToggle={toggle}
             hasWarning={hasOutOfRangeExpenses}
+            isInactive={oneTimeExpenses.length === 0}
           >
             <OneTimeExpenseForm />
           </InputSection>
@@ -282,6 +296,7 @@ export default function App() {
             icon={<TrendingDown className="w-4 h-4 text-red-500" />}
             openSections={openSections}
             onToggle={toggle}
+            isInactive={recurringExpenses.length === 0}
           >
             <RecurringExpenseForm />
           </InputSection>
@@ -292,6 +307,7 @@ export default function App() {
             icon={<UtensilsCrossed className="w-4 h-4 text-orange-500" />}
             openSections={openSections}
             onToggle={toggle}
+            isInactive={!foodBudget.enabled}
           >
             <FoodBudgetForm />
           </InputSection>
@@ -302,6 +318,7 @@ export default function App() {
             icon={<MapPin className="w-4 h-4 text-blue-500" />}
             openSections={openSections}
             onToggle={toggle}
+            isInactive={!transportConfig.enabled}
           >
             <TransportForm />
           </InputSection>
