@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { useProjection } from '@/hooks/useProjection';
 import { useChartFadeTransition } from '@/hooks/useChartFadeTransition';
+import { useYAxisGlow } from '@/hooks/useYAxisGlow';
 import { formatCurrency } from '@/lib/utils';
 import { CHART_COLORS } from '@/lib/constants';
 
@@ -77,6 +78,13 @@ export function IncomeExpenseChart() {
 
   const { chartKey, fading } = useChartFadeTransition(data.length);
 
+  const yFingerprint = useMemo(() => {
+    if (data.length === 0) return '0';
+    const maxVal = Math.max(...data.flatMap(d => [d.income, d.expenses]));
+    return String(Math.ceil(maxVal / 100) * 100);
+  }, [data]);
+  const yAxisGlowing = useYAxisGlow(yFingerprint, fading);
+
   return (
     <div className="w-full">
       <h2 className="text-lg font-semibold mb-4">Monthly Income vs Expenses</h2>
@@ -88,7 +96,24 @@ export function IncomeExpenseChart() {
         <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
           <XAxis dataKey="month" fontSize={12} />
-          <YAxis tickFormatter={(v: number) => formatCurrency(v)} fontSize={12} width={80} />
+          <YAxis
+            tick={(props: Record<string, unknown>) => {
+              const { x, y, payload } = props as { x: number; y: number; payload: { value: number } };
+              return (
+                <text
+                  x={x}
+                  y={y}
+                  dy={4}
+                  textAnchor="end"
+                  fontSize={12}
+                  className={yAxisGlowing ? 'yaxis-tick-glow' : 'yaxis-tick'}
+                >
+                  {formatCurrency(payload.value)}
+                </text>
+              );
+            }}
+            width={80}
+          />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
           <Bar dataKey="income" name="Income" fill={CHART_COLORS.positive} radius={[4, 4, 0, 0]} />

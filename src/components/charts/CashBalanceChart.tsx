@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { useProjection } from '@/hooks/useProjection';
 import { useChartFadeTransition } from '@/hooks/useChartFadeTransition';
+import { useYAxisGlow } from '@/hooks/useYAxisGlow';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import {
   CHART_ANIM_DURATION,
@@ -242,6 +243,9 @@ export function CashBalanceChart() {
     () => setDotsVisible(false),
   );
 
+  // Glow y-axis ticks briefly when the domain/scale changes
+  const yAxisGlowing = useYAxisGlow(yDomain.join(','), fading);
+
   // Handle value changes without length change (hide dots during transition)
   useLayoutEffect(() => {
     if (data === prevDataRef.current) return;
@@ -306,8 +310,21 @@ export function CashBalanceChart() {
           />
           <YAxis
             domain={yDomain}
-            tickFormatter={(v: number) => formatCurrency(v)}
-            fontSize={12}
+            tick={(props: Record<string, unknown>) => {
+              const { x, y, payload } = props as { x: number; y: number; payload: { value: number } };
+              return (
+                <text
+                  x={x}
+                  y={y}
+                  dy={4}
+                  textAnchor="end"
+                  fontSize={12}
+                  className={yAxisGlowing ? 'yaxis-tick-glow' : 'yaxis-tick'}
+                >
+                  {formatCurrency(payload.value)}
+                </text>
+              );
+            }}
             width={80}
           />
           <Tooltip content={<CustomTooltip />} />

@@ -65,6 +65,37 @@
 }
 
 
+/* Y-Axis scale-change glow */
+
+.yaxis-tick {
+  fill: #666666;
+}
+
+.yaxis-tick-glow {
+  fill: #666666;
+  animation: yaxis-glow 1s ease-out;
+}
+
+@keyframes yaxis-glow {
+  0% {
+    fill: #666666;
+    filter: none;
+  }
+  12% {
+    fill: #d97706;
+    filter: drop-shadow(0 0 4px rgba(217, 119, 6, 0.8));
+  }
+  50% {
+    fill: #d97706;
+    filter: drop-shadow(0 0 3px rgba(217, 119, 6, 0.5));
+  }
+  100% {
+    fill: #666666;
+    filter: none;
+  }
+}
+
+
 /* Radix UI – Tooltip & Dialog */
 
 @keyframes fade-out {
