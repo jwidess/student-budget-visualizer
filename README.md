@@ -178,7 +178,7 @@ index.html               # Vite HTML entry
 ## To-do
 - [ ] Add mobile support/variable width handling for smaller screens. Currently does not work on narrow viewports.
   - [x] Added a "rotate device prompt" for narrow widths to force landscape mode on mobile. Works well for now.
-- [ ] Add end date for jobs (Recurring Income) for things like short term gigs or summer jobs.
+- [x] Add end date for jobs (Recurring Income) for things like short term gigs or summer jobs.
 - [ ] Add help tooltips explaining each input field and how it affects projections.
 - [ ] Add help modal for new users with a quick walkthrough of features.
 - [ ] Add export projection data as CSV
