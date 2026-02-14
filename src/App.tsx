@@ -10,6 +10,7 @@ import { OneTimeExpenseForm } from '@/components/inputs/OneTimeExpenseForm';
 import { FoodBudgetForm } from '@/components/inputs/FoodBudgetForm';
 import { TransportForm } from '@/components/inputs/TransportForm';
 import { RotateDevicePrompt } from '@/components/RotateDevicePrompt';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useBudgetStore } from '@/store/budgetStore';
 import { budgetTemplates } from '@/store/templates';
 import {
@@ -90,6 +91,14 @@ export default function App() {
   const [openSections, setOpenSections] = useState<Set<Section>>(new Set(['general']));
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'default' | 'danger';
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+  
   const resetAll = useBudgetStore((s) => s.resetAll);
   const applyTemplate = useBudgetStore((s) => s.applyTemplate);
   const hasUserEdits = useBudgetStore((s) => s.hasUserEdits);
@@ -216,8 +225,19 @@ export default function App() {
             <OutOfRangeBanner />
             <button
               onClick={() => {
-                if (!hasUserEdits || window.confirm('Are you sure you want to reset all data to defaults? This cannot be undone.')) {
+                if (!hasUserEdits) {
                   resetAll();
+                } else {
+                  setConfirmDialog({
+                    isOpen: true,
+                    title: 'Reset All Data',
+                    message: 'Are you sure you want to reset all data to defaults? This cannot be undone.',
+                    variant: 'danger',
+                    onConfirm: () => {
+                      resetAll();
+                      setConfirmDialog({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+                    },
+                  });
                 }
               }}
               className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent hover:shadow-sm active:scale-95 transition-all cursor-pointer"
@@ -264,9 +284,20 @@ export default function App() {
                       <button
                         key={template.name}
                         onClick={() => {
-                          if (!hasUserEdits || window.confirm(`Load "${template.name}" template? This will replace all current values.`)) {
+                          if (!hasUserEdits) {
                             applyTemplate(template.config);
                             setTemplateMenuOpen(false);
+                          } else {
+                            setConfirmDialog({
+                              isOpen: true,
+                              title: `Load "${template.name}" Template?`,
+                              message: 'This will replace all current values. Are you sure?',
+                              onConfirm: () => {
+                                applyTemplate(template.config);
+                                setTemplateMenuOpen(false);
+                                setConfirmDialog({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+                              },
+                            });
                           }
                         }}
                         className="w-full text-left px-3 py-2 hover:bg-accent border-b last:border-b-0 transition-colors cursor-pointer bg-white"
@@ -372,6 +403,16 @@ export default function App() {
           <MemoizedCharts />
         </main>
       </div>
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog({ isOpen: false, title: '', message: '', onConfirm: () => {} })}
+        variant={confirmDialog.variant}
+      />
     </div>
     </>
   );
