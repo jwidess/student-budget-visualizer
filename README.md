@@ -193,6 +193,12 @@ index.html               # Vite HTML entry
 - [ ] Add export projection data as CSV
 - [ ] Add save slots so users can have multiple budgets (e.g. "Current Semester", "Next Semester", "Summer")
 - [ ] Monthly expense end dates
+- [ ] Enable/Disable One-Time and Monthly Expenses/Income to easily see impact without deleting
+- [ ] Add tax factors to income projections to simulate tax withholding and refunds more accurately. Could just be a simple percentage input for each income source that reduces the projected amount, and then a separate "tax refund" one-time income entry that you can schedule for tax season.
+- [ ] Credit card payment simulation. Currently, everything is simulated as if you were paying with a debit card, which directly affects your cash balance. This system would have you input your current credit card balance, payment dates, etc. This way, you could see the more realistic impact of credit card payments when they happen
+- [ ] Gas fillup simulation. Instead of just calculating a daily cost based on miles driven, MPG, and fuel cost, this would simulate actual fillup events. Would probably be adequate to add an input for vehicle tank size which would then calc roughly when fillups happen. This would create more realistic spikes in your cash balance when you have to actually pay for a fillup, instead of just a smooth daily cost.
+- [ ] Add support for electric vehicles explicitly. Currently you can just use the auto transit form and input your electricity cost per mile, but it would be nice to have a separate form that calculates your electricity cost based on miles driven and your vehicle's efficiency (kWh/mile) along with your electricity rate.
+
 
 ## AI Disclaimer: 
 This project was developed with significant work from AI code generation tools as I am not an experienced web developer. While I have reviewed and tested many projections thoroughly (and cross referenced them to manual Excel projections), there may be bugs or inconsistencies. Please use with caution and verify projections. It should go without saying, but this is not financial advice. This site is meant for educational and planning purposes only. Always break out a good ol' spreadsheet or pen and paper to double check important financial decisions.
