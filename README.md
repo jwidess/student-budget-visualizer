@@ -1,13 +1,13 @@
-# WIP - Student Budget Visualizer
-### THIS IS A WORK IN PROGRESS WITH HEAVY RELIANCE ON AI CODE GENERATION. EXPECT BUGS AND INCONSISTENCIES. USE WITH CAUTION.
+# Student Budget Visualizer
+### *This is a work in progress and should not be used for actual financial decisions without double checking projections.*
 
 A visual budget planning tool designed for students, or anyone, to track income, expenses, and project their financial future. See your cash balance fluctuate over time with interactive charts and get warnings before you run out of money.
 
-![Student Budget Visualizer](https://img.shields.io/badge/React-19.2-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue) ![Vite](https://img.shields.io/badge/Vite-7.3-purple)
+## Live Site: [jwidess.github.io/student-budget-visualizer/](https://jwidess.github.io/student-budget-visualizer/)
+
+![Student Budget Visualizer](https://img.shields.io/badge/React-19.2-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue) ![Vite](https://img.shields.io/badge/Vite-7.3-purple) ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.2-green) ![Recharts](https://img.shields.io/badge/Recharts-3.0-red) ![Zustand](https://img.shields.io/badge/Zustand-5.0-yellow)
 
 ![Example Image](example.png)
-
-## View the Live App Here: [jwidess.github.io/student-budget-visualizer/](https://jwidess.github.io/student-budget-visualizer/)
 
 ## Features
 
@@ -33,8 +33,10 @@ A visual budget planning tool designed for students, or anyone, to track income,
 - No account needed, no server required, runs entirely in your browser
 - Reset to defaults with one click
 
+## Example Video:
+<video src="example.mp4" controls></video>
+
 ## Usage Tips
-### DO NOT RELY ON FOR ACTUAL BUDGETING DECISIONS WITHOUT DOUBLE-CHECKING PROJECTIONS. THIS IS A WIP AND WILL CONTAIN BUGS.
 
 1. **Templates**: Start with one of the templates to see how everything works ("Load Template" Button)
 2. **Start Simple**: Begin with just your initial balance and one income source
@@ -191,6 +193,9 @@ index.html               # Vite HTML entry
 - [ ] Add export projection data as CSV
 - [ ] Add save slots so users can have multiple budgets (e.g. "Current Semester", "Next Semester", "Summer")
 - [ ] Monthly expense end dates
+
+## AI Disclaimer: 
+This project was developed with significant work from AI code generation tools as I am not an experienced web developer. While I have reviewed and tested many projections thoroughly (and cross referenced them to manual Excel projections), there may be bugs or inconsistencies. Please use with caution and verify projections. It should go without saying, but this is not financial advice. This site is meant for educational and planning purposes only. Always break out a good ol' spreadsheet or pen and paper to double check important financial decisions.
 
 ## License
 
