@@ -34,7 +34,7 @@ A visual budget planning tool designed for students, or anyone, to track income,
 - Reset to defaults with one click
 
 ## Example Video:
-<video src="example.mp4" controls></video>
+<video src="https://github.com/user-attachments/assets/943a29f3-b36c-480e-9549-e2a5b2e5642f"></video>
 
 ## Usage Tips
 
