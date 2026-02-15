@@ -43,9 +43,10 @@ interface InputSectionProps {
   isInactive?: boolean;
   summaryAmount?: number;
   disabledCount?: number;
+  isApproximate?: boolean;
 }
 
-function InputSection({ id, title, icon, openSections, onToggle, children, hasWarning, isInactive, summaryAmount, disabledCount }: InputSectionProps) {
+function InputSection({ id, title, icon, openSections, onToggle, children, hasWarning, isInactive, summaryAmount, disabledCount, isApproximate }: InputSectionProps) {
   const isOpen = openSections.has(id);
   return (
     <div className="border-b border-border last:border-b-0">
@@ -79,7 +80,7 @@ function InputSection({ id, title, icon, openSections, onToggle, children, hasWa
         </span>
         {summaryAmount !== undefined && (
           <span className="text-xs italic text-slate-600">
-            ${summaryAmount.toFixed(2)}/mo
+            {isApproximate && '≈ '}${summaryAmount.toFixed(2)}/mo
           </span>
         )}
         <ChevronDown
@@ -138,6 +139,22 @@ export default function App() {
   const { hasOutOfRangeRecurring, hasOutOfRangeIncomes, hasOutOfRangeExpenses } = useOutOfRangeDetection();
 
   // Calculate summary amounts for section headers
+  const monthlyRecurringIncome = recurringIncomes
+    .filter((income) => income.enabled !== false)
+    .reduce((sum, income) => {
+      const weeklyAmount = income.hoursPerWeek * income.hourlyRate;
+      switch (income.frequency) {
+        case 'weekly':
+          return sum + weeklyAmount * WEEKS_PER_MONTH;
+        case 'biweekly':
+          return sum + weeklyAmount * 2 * (WEEKS_PER_MONTH / 2); // 26 paychecks/year ÷ 12 months
+        case 'monthly':
+          return sum + weeklyAmount * WEEKS_PER_MONTH;
+        default:
+          return sum;
+      }
+    }, 0);
+
   const monthlyExpensesTotal = recurringExpenses
     .filter((exp) => exp.enabled !== false)
     .reduce((sum, exp) => sum + exp.amount, 0);
@@ -360,7 +377,9 @@ export default function App() {
             onToggle={toggle}
             hasWarning={hasOutOfRangeRecurring}
             isInactive={recurringIncomes.length === 0}
+            summaryAmount={monthlyRecurringIncome}
             disabledCount={disabledRecurringIncomes}
+            isApproximate
           >
             <IncomeForm />
           </InputSection>
