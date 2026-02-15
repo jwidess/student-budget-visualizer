@@ -99,11 +99,11 @@
 /* Sortable item – disabled state */
 
 .sortable-item-disabled {
-  opacity: 0.45;
   border-style: dashed !important;
 }
 
 .sortable-item-disabled > .flex > .flex-1 {
+  opacity: 0.45;
   filter: grayscale(0.5);
 }
 
