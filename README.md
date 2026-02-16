@@ -189,6 +189,7 @@ index.html               # Vite HTML entry
 </details>
 
 ## To-do
+- [ ] Change recurring income to use job start end dates and first paycheck dates to take into account a job that ends before the projection end date, thus you would only receive a partial paycheck. This would be more intuitive and also allow for more accurate projections for short term gigs or summer jobs.
 - [ ] Add mobile support/variable width handling for smaller screens. Currently does not work on narrow viewports.
   - [x] Added a "rotate device prompt" for narrow widths to force landscape mode on mobile. Good enough for now.
 - [x] ~~Add end date for jobs (Recurring Income) for things like short term gigs or summer jobs.~~
@@ -198,6 +199,8 @@ index.html               # Vite HTML entry
 - [ ] Add save slots so users can have multiple budgets (e.g. "Current Semester", "Next Semester", "Summer")
   - [x] Added import/export of input data in JSON format. This allows users to save multiple budgets by exporting their data and re-importing. Good enough for now.
 - [ ] Monthly expense end dates
+- [ ] Hover over items shows date range or point on chart. E.g., hovering over "Recurring Income" items would show first pay date to last pay date. Hovering over one-time income/expense would highlight date on chart.
+- [ ] Highlight One-Time Income/Expense dates on the chart with a small dot, card, text or something
 - [x] ~~Enable/Disable One-Time and Monthly Expenses/Income to easily see impact without deleting~~
 - [ ] Add tax factors to income projections to simulate tax withholding and refunds more accurately. Could just be a simple percentage input for each income source that reduces the projected amount, and then a separate "tax refund" one-time income entry that you can schedule for tax season.
 - [ ] Credit card payment simulation. Currently, everything is simulated as if you were paying with a debit card, which directly affects your cash balance. This system would have you input your current credit card balance, payment dates, etc. This way, you could see the more realistic impact of credit card payments when they happen
