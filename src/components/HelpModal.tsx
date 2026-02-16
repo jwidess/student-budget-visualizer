@@ -51,7 +51,7 @@ export function HelpModal() {
                     <p className="mt-2">
                       Use the sidebar "Budget Inputs" to enter your income and expense details. The charts and summary cards on the dashboard will
                       update automatically as you make changes. You can also start from a preset template using the "Load Template" dropdown
-                      in the header.
+                      in the header. Make sure to use the <strong>import/export</strong> buttons to save your data if you want to visualize multiple scenarios or keep your information for future reference!
                     </p>
                   </section>
 

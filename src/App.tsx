@@ -1,4 +1,4 @@
-import { useState, memo, useRef, useCallback, useEffect } from 'react';
+import { useState, memo, useRef, useCallback, useEffect, ReactNode } from 'react';
 import { CashBalanceChart } from '@/components/charts/CashBalanceChart';
 import { IncomeExpenseChart } from '@/components/charts/IncomeExpenseChart';
 import { SummaryCards, WarningBanner, OutOfRangeBanner, useOutOfRangeDetection } from '@/components/dashboard/SummaryCards';
@@ -12,7 +12,7 @@ import { TransportForm } from '@/components/inputs/TransportForm';
 import { RotateDevicePrompt } from '@/components/RotateDevicePrompt';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { HelpModal } from '@/components/HelpModal';
-import { useBudgetStore } from '@/store/budgetStore';
+import { useBudgetStore, validateBudgetConfig } from '@/store/budgetStore';
 import { budgetTemplates } from '@/store/templates';
 import { WEEKDAYS_PER_MONTH, WEEKEND_DAYS_PER_MONTH, WEEKS_PER_MONTH } from '@/lib/constants';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
@@ -28,6 +28,9 @@ import {
   UtensilsCrossed,
   MapPin,
   FileText,
+  Menu,
+  Download,
+  Upload,
 } from 'lucide-react';
 
 type Section = 'general' | 'income' | 'one-time-income' | 'expenses' | 'one-time-expenses' | 'food' | 'transport';
@@ -114,18 +117,24 @@ export default function App() {
   const [openSections, setOpenSections] = useState<Set<Section>>(new Set(['general']));
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
-    message: string;
+    message: string | ReactNode;
     onConfirm: () => void;
     variant?: 'default' | 'danger';
+    confirmLabel?: string;
+    hideCancelButton?: boolean;
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   
   const resetAll = useBudgetStore((s) => s.resetAll);
   const applyTemplate = useBudgetStore((s) => s.applyTemplate);
+  const exportConfig = useBudgetStore((s) => s.exportConfig);
+  const importConfig = useBudgetStore((s) => s.importConfig);
   const hasUserEdits = useBudgetStore((s) => s.hasUserEdits);
   const mainRef = useRef<HTMLElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Get state for determining if sections are inactive
   const recurringIncomes = useBudgetStore((s) => s.recurringIncomes);
@@ -227,16 +236,92 @@ export default function App() {
 
   // Close template menu when clicking outside
   useEffect(() => {
-    if (!templateMenuOpen) return;
+    if (!templateMenuOpen && !headerMenuOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (!target.closest('.template-menu-container')) {
+      if (templateMenuOpen && !target.closest('.template-menu-container')) {
         setTemplateMenuOpen(false);
+      }
+      if (headerMenuOpen && !target.closest('.header-menu-container')) {
+        setHeaderMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [templateMenuOpen]);
+  }, [templateMenuOpen, headerMenuOpen]);
+
+  const handleExport = useCallback(() => {
+    const json = exportConfig();
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const filename = `budget-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}.json`;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    setHeaderMenuOpen(false);
+  }, [exportConfig]);
+
+  const handleImportClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const fileName = file.name;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      
+      // Validate without importing
+      const validation = validateBudgetConfig(text);
+      
+      if (!validation.success) {
+        setConfirmDialog({
+          isOpen: true,
+          title: 'Import Failed',
+          message: validation.error || 'Unknown error occurred.',
+          confirmLabel: 'Ok',
+          variant: 'danger',
+          hideCancelButton: true,
+          onConfirm: () => setConfirmDialog({ isOpen: false, title: '', message: '', onConfirm: () => {} }),
+        });
+        setHeaderMenuOpen(false);
+        return;
+      }
+      
+      // Validation passed - now decide whether to confirm or import directly
+      const doImport = () => {
+        importConfig(text);
+        setHeaderMenuOpen(false);
+      };
+      
+      if (hasUserEdits) {
+        setConfirmDialog({
+          isOpen: true,
+          title: 'Import Budget Data?',
+          message: (
+            <>
+              This will replace all current values with data from <strong>{fileName}</strong>. Are you sure?
+            </>
+          ),
+          onConfirm: () => {
+            doImport();
+            setConfirmDialog({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+          },
+        });
+      } else {
+        doImport();
+      }
+    };
+    reader.readAsText(file);
+    // Reset file input so the same file can be re-imported
+    e.target.value = '';
+  }, [importConfig, hasUserEdits]);
 
   return (
     <TooltipPrimitive.Provider delayDuration={300} skipDelayDuration={100}>
@@ -270,29 +355,64 @@ export default function App() {
           <div className="flex items-center gap-2 flex-wrap justify-end">
             <WarningBanner />
             <OutOfRangeBanner />
-            <button
-              onClick={() => {
-                if (!hasUserEdits) {
-                  resetAll();
-                } else {
-                  setConfirmDialog({
-                    isOpen: true,
-                    title: 'Reset All Data',
-                    message: 'Are you sure you want to reset all data to defaults? This cannot be undone.',
-                    variant: 'danger',
-                    onConfirm: () => {
-                      resetAll();
-                      setConfirmDialog({ isOpen: false, title: '', message: '', onConfirm: () => {} });
-                    },
-                  });
-                }
-              }}
-              className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent hover:shadow-sm active:scale-95 transition-all cursor-pointer"
-              title="Reset all data to defaults"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              Reset
-            </button>
+            {/* Hidden file input for import */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <div className="relative header-menu-container">
+              <button
+                onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
+                className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent hover:shadow-sm active:scale-95 transition-all cursor-pointer"
+                title="Menu"
+              >
+                <Menu className="w-4 h-4" />
+              </button>
+              {headerMenuOpen && (
+                <div className="absolute top-full right-0 mt-1 bg-white border border-input rounded-md shadow-xl z-[100] w-48 overflow-hidden">
+                  <button
+                    onClick={handleExport}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-accent transition-colors cursor-pointer text-left"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Export Data
+                  </button>
+                  <button
+                    onClick={() => { handleImportClick(); setHeaderMenuOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-accent transition-colors cursor-pointer text-left border-b"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    Import Data
+                  </button>
+                  <button
+                    onClick={() => {
+                      setHeaderMenuOpen(false);
+                      if (!hasUserEdits) {
+                        resetAll();
+                      } else {
+                        setConfirmDialog({
+                          isOpen: true,
+                          title: 'Reset All Data',
+                          message: 'Are you sure you want to reset all data to defaults? This cannot be undone.',
+                          variant: 'danger',
+                          onConfirm: () => {
+                            resetAll();
+                            setConfirmDialog({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+                          },
+                        });
+                      }
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer text-left"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    Reset All
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -468,6 +588,8 @@ export default function App() {
         onConfirm={confirmDialog.onConfirm}
         onCancel={() => setConfirmDialog({ isOpen: false, title: '', message: '', onConfirm: () => {} })}
         variant={confirmDialog.variant}
+        confirmLabel={confirmDialog.confirmLabel}
+        hideCancelButton={confirmDialog.hideCancelButton}
       />
     </div>
     </TooltipPrimitive.Provider>

@@ -20,6 +20,29 @@ function nextFriday(): string {
   return format(addDays(d, diff), 'yyyy-MM-dd');
 }
 
+// Validation helper for importing configs
+export function validateBudgetConfig(json: string): { success: boolean; error?: string } {
+  try {
+    const parsed = JSON.parse(json);
+    // Validate required top-level fields
+    if (
+      typeof parsed.initialBalance !== 'number' ||
+      typeof parsed.projectionMonths !== 'number' ||
+      !Array.isArray(parsed.recurringIncomes) ||
+      !Array.isArray(parsed.oneTimeIncomes) ||
+      !Array.isArray(parsed.recurringExpenses) ||
+      !Array.isArray(parsed.oneTimeExpenses) ||
+      typeof parsed.foodBudget !== 'object' ||
+      typeof parsed.transportConfig !== 'object'
+    ) {
+      return { success: false, error: 'Invalid file format. Missing or invalid fields.' };
+    }
+    return { success: true };
+  } catch {
+    return { success: false, error: 'Invalid JSON file. Could not parse the data.' };
+  }
+}
+
 interface BudgetActions {
   setInitialBalance: (amount: number) => void;
   setProjectionMonths: (months: number) => void;
@@ -49,6 +72,8 @@ interface BudgetActions {
   updateTransportConfig: (data: Partial<TransportConfig>) => void;
 
   applyTemplate: (config: BudgetConfig) => void;
+  exportConfig: () => string;
+  importConfig: (json: string) => { success: boolean; error?: string };
   resetAll: () => void;
   hasUserEdits: boolean;
 }
@@ -267,6 +292,41 @@ export const useBudgetStore = create<BudgetStore>()(
           transportConfig: { ...state.transportConfig, ...data },
         })),
       applyTemplate: (config) => set({ ...config, hasUserEdits: false }),
+
+      exportConfig: () => {
+        const state = useBudgetStore.getState();
+        const config: BudgetConfig = {
+          initialBalance: state.initialBalance,
+          projectionMonths: state.projectionMonths,
+          recurringIncomes: state.recurringIncomes,
+          oneTimeIncomes: state.oneTimeIncomes,
+          recurringExpenses: state.recurringExpenses,
+          oneTimeExpenses: state.oneTimeExpenses,
+          foodBudget: state.foodBudget,
+          transportConfig: state.transportConfig,
+        };
+        return JSON.stringify(config, null, 2);
+      },
+
+      importConfig: (json: string) => {
+        const validation = validateBudgetConfig(json);
+        if (!validation.success) {
+          return validation;
+        }
+        const parsed = JSON.parse(json);
+        const config: BudgetConfig = {
+          initialBalance: parsed.initialBalance,
+          projectionMonths: parsed.projectionMonths,
+          recurringIncomes: parsed.recurringIncomes,
+          oneTimeIncomes: parsed.oneTimeIncomes,
+          recurringExpenses: parsed.recurringExpenses,
+          oneTimeExpenses: parsed.oneTimeExpenses,
+          foodBudget: parsed.foodBudget,
+          transportConfig: parsed.transportConfig,
+        };
+        set({ ...config, hasUserEdits: true });
+        return { success: true };
+      },
       
       resetAll: () => set({ ...defaultConfig, hasUserEdits: false }),
     }),

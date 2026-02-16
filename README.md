@@ -30,6 +30,7 @@ A visual budget planning tool designed for students, or anyone, to track income,
 
 ### 💾 Data Persistence
 - All data automatically saved to browser localStorage
+- Import/export you input data in JSON format
 - No account needed, no server required, runs entirely in your browser
 - Reset to defaults with one click
 
@@ -48,7 +49,8 @@ A visual budget planning tool designed for students, or anyone, to track income,
 8. **Projection Length**: Adjust how many months ahead to calculate (3-24 months)
 9. **Watch the Warning Banner**: The header shows an alert if your balance will go negative or if dates are invalid
 10. **Help Tooltips**: Hover over help icons (?) next to input fields for explanations
-11. **Reset**: Use the reset button in the top-right to restore default values
+11. **Reset**: Use the reset button in the settings menu to restore default values
+12. **Import/Export**: Use the buttons in the settings menu to save your data as JSON or load it back in
 
 ## How It Works
 
