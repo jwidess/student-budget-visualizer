@@ -119,7 +119,7 @@ export function runProjection(config: BudgetConfig): DailySnapshot[] {
       if (oti.enabled === false) continue;
       if (oti.date === dateStr) {
         incomeToday += oti.amount;
-        events.push({ label: oti.label, amount: oti.amount, type: 'income' });
+        events.push({ label: oti.label, amount: oti.amount, type: 'income', isOneTime: true });
       }
     }
 
@@ -137,7 +137,7 @@ export function runProjection(config: BudgetConfig): DailySnapshot[] {
       if (ote.enabled === false) continue;
       if (ote.date === dateStr) {
         expensesToday += ote.amount;
-        events.push({ label: ote.label, amount: ote.amount, type: 'expense' });
+        events.push({ label: ote.label, amount: ote.amount, type: 'expense', isOneTime: true });
       }
     }
 

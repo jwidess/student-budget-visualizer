@@ -152,6 +152,7 @@ src/
 │   ├── charts/
 │   │   ├── CashBalanceChart.tsx      # Time-series area chart with balance visualization
 │   │   └── IncomeExpenseChart.tsx    # Monthly bar chart comparing income vs expenses
+   │   └── EventAnnotations.tsx      # In-chart one-time event labels + connectors (collision-avoiding)
 │   ├── dashboard/
 │   │   └── SummaryCards.tsx          # Summary statistics and warning banners
 │   ├── inputs/
@@ -172,6 +173,8 @@ src/
 ├── engine/
 │   ├── types.ts         # TypeScript interfaces for all data models
 │   └── projection.ts    # Day-by-day financial simulation logic
+   ├── types/
+   │   └── recharts-hooks.d.ts  # Internal Recharts hook typings used by annotations
 ├── hooks/
 │   └── useProjection.ts # Memoized projection results from Zustand state
 ├── store/
@@ -200,7 +203,7 @@ index.html               # Vite HTML entry
   - [x] Added import/export of input data in JSON format. This allows users to save multiple budgets by exporting their data and re-importing. Good enough for now.
 - [ ] Monthly expense end dates
 - [ ] Hover over items shows date range or point on chart. E.g., hovering over "Recurring Income" items would show first pay date to last pay date. Hovering over one-time income/expense would highlight date on chart.
-- [ ] Highlight One-Time Income/Expense dates on the chart with a small dot, card, text or something
+- [x] ~~Highlight One-Time Income/Expense dates on the chart with a small dot, card, text or something~~
 - [x] ~~Enable/Disable One-Time and Monthly Expenses/Income to easily see impact without deleting~~
 - [ ] Add tax factors to income projections to simulate tax withholding and refunds more accurately. Could just be a simple percentage input for each income source that reduces the projected amount, and then a separate "tax refund" one-time income entry that you can schedule for tax season.
 - [ ] Credit card payment simulation. Currently, everything is simulated as if you were paying with a debit card, which directly affects your cash balance. This system would have you input your current credit card balance, payment dates, etc. This way, you could see the more realistic impact of credit card payments when they happen

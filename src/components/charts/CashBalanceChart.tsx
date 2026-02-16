@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, useEffect, useLayoutEffect } from 'react';
+import { useMemo, useRef, useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import {
   AreaChart,
   Area,
@@ -21,6 +21,8 @@ import {
   MAX_SAMPLE_POINTS,
   XAXIS_TICK_COUNT,
 } from '@/lib/constants';
+import { EventAnnotations } from './EventAnnotations';
+import type { AnnotationHoverInfo } from './EventAnnotations';
 import type { DailySnapshot, DailyEvent } from '@/engine/types';
 
 /** Round down to nearest increment */
@@ -48,6 +50,7 @@ function niceIncrement(range: number): number {
 const CHART_HEIGHT = 400;
 const MARGIN = { top: 10, right: 10, left: 10, bottom: 0 };
 const XAXIS_HEIGHT = 30; // explicit so gradient bounds stay in sync
+const TOOLTIP_OFFSET_Y = 12; // px below the dot
 
 interface ChartDataPoint {
   date: string;
@@ -170,6 +173,12 @@ export function CashBalanceChart() {
     return result;
   }, [data, minIdx, maxIdx]);
 
+  // ── One-time event detection ──
+  const hasOneTimeEvents = useMemo(
+    () => sampled.some((d) => d.events.some((e) => e.isOneTime)),
+    [sampled],
+  );
+
   // ── Sticky Y-axis domain ──
   // Only expands when data exceeds current bounds; prevents misleading
   // visual shifts when small input changes cause axis rescaling.
@@ -230,9 +239,55 @@ export function CashBalanceChart() {
   const gradientY1 = MARGIN.top;
   const gradientY2 = CHART_HEIGHT - MARGIN.bottom - XAXIS_HEIGHT;
 
+  // ── Annotation hover state ──
+  const [annotationHover, setAnnotationHover] = useState<AnnotationHoverInfo | null>(null);
+  const handleAnnotationHover = useCallback(
+    (info: AnnotationHoverInfo | null) => setAnnotationHover(info),
+    [],
+  );
+
+  // Find the data point matching the hovered annotation's date
+  const annotationTooltipData = useMemo(() => {
+    if (!annotationHover) return null;
+    return sampled.find((d) => d.date === annotationHover.date) ?? null;
+  }, [annotationHover, sampled]);
+
   // ── Dot visibility & chart transition management ──
   const [dotsVisible, setDotsVisible] = useState(true);
   const prevDataRef = useRef(data);
+
+  // ── Resize detection: hide dots/annotations while chart re-flows ──
+  const containerRef = useRef<HTMLDivElement>(null);
+  const prevWidthRef = useRef<number | null>(null);
+  const resizeTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  const hideDotsForAnimation = useCallback(() => {
+    setDotsVisible(false);
+    if (resizeTimerRef.current) clearTimeout(resizeTimerRef.current);
+    resizeTimerRef.current = setTimeout(
+      () => setDotsVisible(true),
+      CHART_ANIM_DURATION,
+    );
+  }, []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const newWidth = entry.contentRect.width;
+        if (prevWidthRef.current !== null && newWidth !== prevWidthRef.current) {
+          hideDotsForAnimation();
+        }
+        prevWidthRef.current = newWidth;
+      }
+    });
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      if (resizeTimerRef.current) clearTimeout(resizeTimerRef.current);
+    };
+  }, [hideDotsForAnimation]);
 
   // Fade-out / re-mount when projection length changes.
   // We track data.length (total projection days) instead of sampled.length,
@@ -272,8 +327,9 @@ export function CashBalanceChart() {
     <div className="w-full">
       <h2 className="text-lg font-semibold mb-4">Cash Balance Over Time</h2>
       <div
+        ref={containerRef}
         className="transition-opacity duration-150 ease-in-out"
-        style={{ opacity: fading ? 0 : 1 }}
+        style={{ opacity: fading ? 0 : 1, position: 'relative' }}
       >
       <ResponsiveContainer key={chartKey} width="100%" height={CHART_HEIGHT}>
         <AreaChart
@@ -327,7 +383,12 @@ export function CashBalanceChart() {
             }}
             width={80}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip
+            content={(props) => {
+              if (annotationHover) return null;
+              return <CustomTooltip {...(props as unknown as CustomTooltipProps)} />;
+            }}
+          />
           <ReferenceLine y={0} stroke={CHART_COLORS.zeroLine} strokeDasharray="3 3" />
           {/* Min/max highlight dots — only rendered after area animation finishes */}
           {dotsVisible && data.length > 0 && (
@@ -379,7 +440,7 @@ export function CashBalanceChart() {
             baseValue={Math.max(0, yDomain[0])}
             strokeWidth={2}
             dot={false}
-            activeDot={(props) => {
+            activeDot={annotationHover ? false : (props) => {
               const { cx = 0, cy = 0, payload } = props as { cx?: number; cy?: number; payload: ChartDataPoint };
               const color = payload.balance >= 0 ? CHART_COLORS.positive : CHART_COLORS.negative;
               return (
@@ -397,8 +458,35 @@ export function CashBalanceChart() {
             animationDuration={CHART_ANIM_DURATION}
             animationEasing="ease-in-out"
           />
+          {/* One-time event annotations — rendered AFTER Area so they
+              appear on top of the chart fill and stroke */}
+          {hasOneTimeEvents && (
+            <EventAnnotations
+              sampled={sampled}
+              visible={dotsVisible}
+              onAnnotationHover={handleAnnotationHover}
+            />
+          )}
         </AreaChart>
       </ResponsiveContainer>
+      {/* Tooltip overlay when hovering an annotation label */}
+      {annotationHover && annotationTooltipData && (
+        <div
+          style={{
+            position: 'absolute',
+            left: annotationHover.dotX,
+            top: annotationHover.dotY + TOOLTIP_OFFSET_Y,
+            transform: 'translateX(-50%)',
+            pointerEvents: 'none',
+            zIndex: 10,
+          }}
+        >
+          <CustomTooltip
+            active
+            payload={[{ payload: annotationTooltipData }]}
+          />
+        </div>
+      )}
       </div>
     </div>
   );

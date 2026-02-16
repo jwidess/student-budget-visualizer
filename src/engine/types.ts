@@ -78,6 +78,8 @@ export interface DailyEvent {
   label: string;
   amount: number;
   type: 'income' | 'expense';
+  /** Whether this is a one-time (non-recurring) event */
+  isOneTime?: boolean;
 }
 
 export interface DailySnapshot {
