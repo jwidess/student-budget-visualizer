@@ -110,8 +110,8 @@ export function HelpModal() {
                           <li><em>Monthly:</em> Paycheck = hours * rate * (52 ÷ 12)</li>
                         </ul>
                       </li>
-                      <li><strong>First pay date</strong> — Anchor date of first paycheck. Future paydays are calculated from this date.</li>
-                      <li><strong>Last pay date</strong> (optional) — If set, income stops after this date. Useful for seasonal jobs or internships.</li>
+                      <li><strong>Pay date anchor</strong> — A known paycheck date used to anchor the pay schedule. For a current job, enter a recent past pay date. For a future job, enter the expected first paycheck date. Paydays are calculated forward from this anchor.</li>
+                      <li><strong>End date</strong> (optional) — The last working day for this job. Income stops after this date. If the end date doesn't fall on a regular payday, a <strong>partial paycheck</strong> is automatically added for the days worked in that final pay period.</li>
                     </ul>
                   </section>
 

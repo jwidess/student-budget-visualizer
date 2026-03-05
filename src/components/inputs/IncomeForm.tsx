@@ -1,10 +1,11 @@
 import { useBudgetStore } from '@/store/budgetStore';
 import { Plus, Trash2, X } from 'lucide-react';
 import type { PayFrequency } from '@/engine/types';
-import { format, addMonths, parseISO, differenceInCalendarDays, addDays } from 'date-fns';
+import { format, addMonths, parseISO, differenceInCalendarDays } from 'date-fns';
 import { EditableLabel } from './EditableLabel';
 import { DebouncedNumberInput } from './DebouncedNumberInput';
 import { SortableItem } from './SortableItem';
+import { Tooltip } from '@/components/Tooltip';
 import {
   DndContext,
   closestCenter,
@@ -30,73 +31,47 @@ export function IncomeForm() {
     projectionMonths,
   } = useBudgetStore();
 
-  const minDate = format(new Date(), 'yyyy-MM-dd');
   const maxDate = format(addMonths(new Date(), projectionMonths), 'yyyy-MM-dd');
+  const minDate = format(new Date(), 'yyyy-MM-dd');
 
-  const isDateOutOfRange = (dateStr: string) => {
-    return dateStr < minDate || dateStr > maxDate;
+  // Out-of-range: start date beyond projection OR end date entirely in the past
+  const isIncomeOutOfRange = (startDate: string, endDate?: string) => {
+    if (startDate > maxDate) return true;
+    if (endDate && endDate < minDate) return true;
+    return false;
   };
 
-  // Calculate number of paychecks between start and end dates
-  const countPaychecks = (startDateStr: string, endDateStr: string | undefined, frequency: PayFrequency): number => {
-    if (!endDateStr) return -1; // Indefinite
+  // Calculate number of full paychecks between start and end dates
+  const countPaychecks = (startDateStr: string, endDateStr: string | undefined, frequency: PayFrequency): { full: number; hasPartial: boolean } => {
+    if (!endDateStr) return { full: -1, hasPartial: false };
     
     const startDate = parseISO(startDateStr);
     const endDate = parseISO(endDateStr);
     const daysDiff = differenceInCalendarDays(endDate, startDate);
 
-    if (daysDiff < 0) return 0;
+    if (daysDiff < 0) return { full: 0, hasPartial: false };
 
     switch (frequency) {
-      case 'weekly':
-        return Math.floor(daysDiff / 7) + 1;
-      case 'biweekly':
-        return Math.floor(daysDiff / 14) + 1;
+      case 'weekly': {
+        const full = Math.floor(daysDiff / 7) + 1;
+        const hasPartial = daysDiff % 7 !== 0;
+        return { full, hasPartial };
+      }
+      case 'biweekly': {
+        const full = Math.floor(daysDiff / 14) + 1;
+        const hasPartial = daysDiff % 14 !== 0;
+        return { full, hasPartial };
+      }
       case 'monthly': {
-        // Count months between dates
         const months = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
                        (endDate.getMonth() - startDate.getMonth());
-        return months + 1;
+        const full = months + 1;
+        const hasPartial = endDate.getDate() !== startDate.getDate();
+        return { full, hasPartial };
       }
       default:
-        return 0;
+        return { full: 0, hasPartial: false };
     }
-  };
-
-  // Generate list of valid pay dates based on frequency
-  const getValidPayDates = (startDateStr: string, frequency: PayFrequency, maxDateStr: string): string[] => {
-    const startDate = parseISO(startDateStr);
-    const maxDate = parseISO(maxDateStr);
-    const validDates: string[] = [];
-    
-    let currentDate = startDate;
-    let iteration = 0;
-    const maxIterations = 1000; // Safety limit
-    
-    while (currentDate <= maxDate && iteration < maxIterations) {
-      validDates.push(format(currentDate, 'yyyy-MM-dd'));
-      
-      switch (frequency) {
-        case 'weekly':
-          currentDate = addDays(currentDate, 7);
-          break;
-        case 'biweekly':
-          currentDate = addDays(currentDate, 14);
-          break;
-        case 'monthly':
-          currentDate = addMonths(currentDate, 1);
-          break;
-      }
-      iteration++;
-    }
-    
-    return validDates;
-  };
-
-  // Format date for display
-  const formatDateDisplay = (dateStr: string): string => {
-    const date = parseISO(dateStr);
-    return format(date, 'MMM d, yyyy');
   };
 
   const sensors = useSensors(
@@ -135,7 +110,7 @@ export function IncomeForm() {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={recurringIncomes.map((i) => i.id)} strategy={verticalListSortingStrategy}>
           {recurringIncomes.map((income) => {
-            const isOutOfRange = isDateOutOfRange(income.startDate) || (income.endDate && isDateOutOfRange(income.endDate));
+            const isOutOfRange = isIncomeOutOfRange(income.startDate, income.endDate);
             return (
             <SortableItem key={income.id} id={income.id} enabled={income.enabled !== false} onToggleEnabled={() => updateRecurringIncome(income.id, { enabled: income.enabled === false })} className={isOutOfRange ? 'border-2 border-red-500 bg-orange-100' : ''}>
               <div className="flex items-center gap-2">
@@ -193,17 +168,22 @@ export function IncomeForm() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-muted-foreground mb-1">
-                    First pay date
+                  <label className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                    Pay date anchor
+                    <Tooltip content="Enter a known past or upcoming paycheck date to anchor the pay schedule. For a current job, your most recent pay date works. For a future job, enter the expected first paycheck date." />
                   </label>
                   <input
                     type="date"
                     value={income.startDate}
-                    onChange={(e) =>
-                      updateRecurringIncome(income.id, { startDate: e.target.value })
-                    }
-                    min={minDate}
-                    max={maxDate}
+                    onChange={(e) => {
+                      const newStart = e.target.value;
+                      const updates: Partial<typeof income> = { startDate: newStart };
+                      // Clear end date if it would be before the new start date
+                      if (income.endDate && newStart > income.endDate) {
+                        updates.endDate = undefined;
+                      }
+                      updateRecurringIncome(income.id, updates);
+                    }}
                     className="w-full rounded-md border border-input bg-background px-1 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
@@ -211,27 +191,21 @@ export function IncomeForm() {
 
               <div className="grid grid-cols-1 gap-3">
                 <div>
-                  <label className="block text-xs text-muted-foreground mb-1">
-                    Last pay date (optional)
+                  <label className="block text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                    End date (optional)
+                    <Tooltip content="The last day of this job. If it doesn't fall on a regular payday, a partial paycheck will be calculated automatically." />
                   </label>
                   <div className="relative">
-                    <select
+                    <input
+                      type="date"
                       value={income.endDate || ''}
                       onChange={(e) => {
                         const value = e.target.value;
                         updateRecurringIncome(income.id, { endDate: value || undefined });
                       }}
-                      className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring pr-8 appearance-none"
-                    >
-                      <option value="">No end date (ongoing)</option>
-                      {getValidPayDates(income.startDate, income.frequency, maxDate)
-                        .slice(1) // Skip the first date (start date)
-                        .map((date) => (
-                          <option key={date} value={date}>
-                            {formatDateDisplay(date)}
-                          </option>
-                        ))}
-                    </select>
+                      min={income.startDate}
+                      className={`w-full rounded-md border border-input bg-background px-1 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring ${income.endDate ? 'pr-7' : ''}`}
+                    />
                     {income.endDate && (
                       <button
                         type="button"
@@ -243,11 +217,14 @@ export function IncomeForm() {
                       </button>
                     )}
                   </div>
-                  {income.endDate && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {countPaychecks(income.startDate, income.endDate, income.frequency)} paychecks included
-                    </p>
-                  )}
+                  {income.endDate && (() => {
+                    const { full, hasPartial } = countPaychecks(income.startDate, income.endDate, income.frequency);
+                    return (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {full} paycheck{full !== 1 ? 's' : ''}{hasPartial ? ' + partial' : ''} included
+                      </p>
+                    );
+                  })()}
                 </div>
               </div>
 

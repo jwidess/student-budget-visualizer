@@ -95,7 +95,7 @@ export function useOutOfRangeDetection() {
     (i) => i.date < minDate || i.date > maxDate
   );
   const outOfRangeRecurring = recurringIncomes.filter(
-    (i) => i.startDate < minDate || i.startDate > maxDate || (i.endDate && (i.endDate < minDate || i.endDate > maxDate))
+    (i) => i.startDate > maxDate || (i.endDate && i.endDate < minDate)
   );
 
   return {

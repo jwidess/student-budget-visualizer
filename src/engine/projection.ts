@@ -1,6 +1,7 @@
 import {
   addDays,
   addMonths,
+  subMonths,
   differenceInCalendarDays,
   getDate,
   isWeekend,
@@ -27,20 +28,16 @@ function paycheckAmount(income: RecurringIncome): number {
 }
 
 /**
- * Check if a given date is a payday for a recurring income.
+ * Check if a given date is a regular payday for a recurring income.
+ * Does NOT check the endDate boundary, callers handle that separately
+ * so partial paycheck logic can emit on the endDate itself.
  */
-function isPayday(date: Date, income: RecurringIncome): boolean {
+function isRegularPayday(date: Date, income: RecurringIncome): boolean {
   const anchor = startOfDay(parseISO(income.startDate));
   const current = startOfDay(date);
   const daysDiff = differenceInCalendarDays(current, anchor);
 
   if (daysDiff < 0) return false;
-
-  // Check if the date is after the end date (if specified)
-  if (income.endDate) {
-    const endDate = startOfDay(parseISO(income.endDate));
-    if (current > endDate) return false;
-  }
 
   switch (income.frequency) {
     case 'weekly':
@@ -51,6 +48,74 @@ function isPayday(date: Date, income: RecurringIncome): boolean {
       return getDate(current) === getDate(anchor);
     default:
       return false;
+  }
+}
+
+/**
+ * Check if a given date is a regular payday and within the incomes date range.
+ */
+function isPayday(date: Date, income: RecurringIncome): boolean {
+  if (income.endDate) {
+    const endDate = startOfDay(parseISO(income.endDate));
+    if (startOfDay(date) > endDate) return false;
+  }
+  return isRegularPayday(date, income);
+}
+
+/**
+ * Calculate a pro-rated partial paycheck amount for an end date
+ * that doesn't fall on a regular payday.
+ * Returns 0 if the end date IS a regular payday (no partial needed).
+ */
+function partialPaycheckAmount(income: RecurringIncome): number {
+  if (!income.endDate) return 0;
+  const endDate = startOfDay(parseISO(income.endDate));
+
+  // If the end date is a regular payday, no partial needed
+  if (isRegularPayday(endDate, income)) return 0;
+
+  const fullAmount = paycheckAmount(income);
+
+  switch (income.frequency) {
+    case 'weekly': {
+      // Find how many days into the current week period
+      const anchor = startOfDay(parseISO(income.startDate));
+      const daysDiff = differenceInCalendarDays(endDate, anchor);
+      if (daysDiff < 0) return 0;
+      const daysIntoPeriod = daysDiff % 7;
+      return (daysIntoPeriod / 7) * fullAmount;
+    }
+    case 'biweekly': {
+      const anchor = startOfDay(parseISO(income.startDate));
+      const daysDiff = differenceInCalendarDays(endDate, anchor);
+      if (daysDiff < 0) return 0;
+      const daysIntoPeriod = daysDiff % 14;
+      return (daysIntoPeriod / 14) * fullAmount;
+    }
+    case 'monthly': {
+      // Find the previous payday and next payday to get period length
+      const anchorDay = getDate(parseISO(income.startDate));
+      const endMonth = endDate;
+
+      // Previous payday: same day-of-month in the current or prior month
+      let prevPayday: Date;
+      if (getDate(endMonth) >= anchorDay) {
+        prevPayday = new Date(endMonth.getFullYear(), endMonth.getMonth(), anchorDay);
+      } else {
+        const prevMonth = subMonths(endMonth, 1);
+        prevPayday = new Date(prevMonth.getFullYear(), prevMonth.getMonth(), anchorDay);
+      }
+      // Next payday
+      const nextPayday = addMonths(prevPayday, 1);
+
+      const periodLength = differenceInCalendarDays(nextPayday, prevPayday);
+      const daysIntoPeriod = differenceInCalendarDays(endDate, prevPayday);
+
+      if (periodLength <= 0 || daysIntoPeriod <= 0) return 0;
+      return (daysIntoPeriod / periodLength) * fullAmount;
+    }
+    default:
+      return 0;
   }
 }
 
@@ -111,6 +176,14 @@ export function runProjection(config: BudgetConfig): DailySnapshot[] {
         const amount = paycheckAmount(income);
         incomeToday += amount;
         events.push({ label: `${income.label} paycheck`, amount, type: 'income' });
+      }
+      // Emit a pro-rated partial paycheck on the end date if not a regular payday
+      if (income.endDate && dateStr === income.endDate && !isRegularPayday(date, income)) {
+        const amount = partialPaycheckAmount(income);
+        if (amount > 0) {
+          incomeToday += amount;
+          events.push({ label: `${income.label} paycheck (partial)`, amount: Math.round(amount * 100) / 100, type: 'income' });
+        }
       }
     }
 

@@ -13,7 +13,7 @@ A visual budget planning tool designed for students, or anyone, to track income,
 ## Features
 
 ### 💰 Income Tracking
-- **Recurring Income**: Full or part time job with configurable hours, hourly rate, and pay frequency (weekly/biweekly/monthly)
+- **Recurring Income**: Full or part time job with configurable hours, hourly rate, pay frequency (weekly/biweekly/monthly), and flexible start/end dates. A **pay date anchor** sets the schedule, use a past paycheck date for a current job or a future date for an upcoming one. Setting an end date stops income after that day. If the end date doesn't land on a regular payday, a partial paycheck is calculated automatically.
 - **One-Time Income**: Tax refunds, stipends, gifts, and other non-recurring income
 
 ### 💸 Expense Management
@@ -59,7 +59,8 @@ The app runs a **day-by-day financial simulation** starting from your current ba
 
 1. **Input Configuration**: Enter your starting balance, income sources, and all expenses
 2. **Projection Engine**: The engine (`src/engine/projection.ts`) simulates each day:
-   - Adds recurring income on calculated paydays (weekly/biweekly/monthly)
+   - Adds recurring income on calculated paydays (weekly/biweekly/monthly), anchored to a known past or future pay date
+   - Emits a partial paycheck on the end date if it doesn't fall on a regular payday
    - Adds one-time income on specified dates
    - Subtracts recurring expenses on the specified day of each month
    - Subtracts one-time expenses on specified dates
@@ -192,7 +193,8 @@ index.html               # Vite HTML entry
 </details>
 
 ## To-do
-- [ ] Change recurring income to use job start end dates and first paycheck dates to take into account a job that ends before the projection end date, thus you would only receive a partial paycheck. This would be more intuitive and also allow for more accurate projections for short term gigs or summer jobs.
+- [x] ~~Change recurring income to use job start end dates and first paycheck dates to take into account a job that ends before the projection end date, thus you would only receive a partial paycheck. This would be more intuitive and also allow for more accurate projections for short term gigs or summer jobs.~~
+  - [ ] Still might want to add explicit job start/end dates alongside the pay anchor to make it easier to schedule multiple jobs. Will test and see if the current system is sufficient.
 - [ ] Add mobile support/variable width handling for smaller screens. Currently does not work on narrow viewports.
   - [x] Added a "rotate device prompt" for narrow widths to force landscape mode on mobile. Good enough for now.
 - [x] ~~Add end date for jobs (Recurring Income) for things like short term gigs or summer jobs.~~
