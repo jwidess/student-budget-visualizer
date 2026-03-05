@@ -46,14 +46,11 @@ export function SummaryCards() {
         >
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-muted-foreground font-medium">
-              {card.label}
+              {card.label}{card.subtitle && <span className="font-normal"> ({card.subtitle})</span>}
             </span>
             <card.icon className={`w-4 h-4 ${card.color}`} />
           </div>
           <p className={`text-xl font-bold ${card.color}`}>{card.value}</p>
-          {card.subtitle && (
-            <p className="text-xs text-muted-foreground mt-1">{card.subtitle}</p>
-          )}
         </div>
       ))}
     </div>
