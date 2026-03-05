@@ -224,6 +224,18 @@ export function CashBalanceChart() {
   // chart's pixel coordinate space directly, avoiding objectBoundingBox issues
   // where the fill and stroke paths have different bounding boxes (the stroke
   // doesn't extend to baseValue=0) and monotone interpolation can overshoot.
+  // Explicit tick array evenly spaced at the same increment used for the domain,
+  // so Recharts doesn't auto generate oddly spaced Y-axis labels.
+  const yTicks = useMemo(() => {
+    const [domMin, domMax] = yDomain;
+    const inc = niceIncrement(domMax - domMin);
+    const ticks: number[] = [];
+    for (let v = domMin; v <= domMax + inc * 0.01; v += inc) {
+      ticks.push(Math.round(v));
+    }
+    return ticks;
+  }, [yDomain]);
+
   const zeroFraction = useMemo(() => {
     const [domMin, domMax] = yDomain;
     if (domMax <= 0) return 0;   // entirely negative
@@ -366,6 +378,7 @@ export function CashBalanceChart() {
           />
           <YAxis
             domain={yDomain}
+            ticks={yTicks}
             tick={(props: Record<string, unknown>) => {
               const { x, y, payload } = props as { x: number; y: number; payload: { value: number } };
               return (
