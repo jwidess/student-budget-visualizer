@@ -421,7 +421,7 @@ export default function App() {
       <div className="flex-1 flex max-w-screen-2xl mx-auto w-full">
         {/* Sidebar - Inputs */}
         <aside
-          className={`border-r bg-card overflow-hidden transition-[width,min-width] duration-200 will-change-[width] ${
+          className={`sticky top-0 h-screen border-r bg-card overflow-hidden transition-[width,min-width] duration-200 will-change-[width] flex-shrink-0 ${
             sidebarOpen ? 'w-80 min-w-[320px]' : 'w-0 min-w-0'
           }`}
           onTransitionEnd={handleSidebarTransitionEnd}
@@ -570,7 +570,7 @@ export default function App() {
         </aside>
 
         {/* Dashboard */}
-        <main ref={mainRef} className="flex-1 overflow-y-auto p-6 space-y-6">
+        <main ref={mainRef} className="flex-1 p-6 space-y-6">
           <SummaryCards />
 
           <MemoizedCharts />
