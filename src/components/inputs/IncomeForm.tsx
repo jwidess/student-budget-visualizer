@@ -1,11 +1,13 @@
+import { useCallback } from 'react';
 import { useBudgetStore } from '@/store/budgetStore';
 import { Plus, Trash2, X } from 'lucide-react';
-import type { PayFrequency } from '@/engine/types';
-import { format, addMonths, parseISO, differenceInCalendarDays } from 'date-fns';
+import type { PayFrequency, RecurringIncome } from '@/engine/types';
+import { format, addMonths, addDays, parseISO, differenceInCalendarDays, getDate, startOfDay } from 'date-fns';
 import { EditableLabel } from './EditableLabel';
 import { DebouncedNumberInput } from './DebouncedNumberInput';
 import { SortableItem } from './SortableItem';
 import { Tooltip } from '@/components/Tooltip';
+import { useHoverHighlightStore } from '@/store/hoverHighlightStore';
 import {
   DndContext,
   closestCenter,
@@ -31,8 +33,36 @@ export function IncomeForm() {
     projectionMonths,
   } = useBudgetStore();
 
+  const setHighlight = useHoverHighlightStore((s) => s.setHighlight);
+  const clearHighlight = useHoverHighlightStore((s) => s.clearHighlight);
+
   const maxDate = format(addMonths(new Date(), projectionMonths), 'yyyy-MM-dd');
   const minDate = format(new Date(), 'yyyy-MM-dd');
+
+  /** Compute all pay dates within the projection range for a recurring income. */
+  const computePayDates = useCallback((income: RecurringIncome): string[] => {
+    const today = startOfDay(new Date());
+    const end = startOfDay(addMonths(today, projectionMonths));
+    const anchor = startOfDay(parseISO(income.startDate));
+    const incEnd = income.endDate ? startOfDay(parseISO(income.endDate)) : end;
+    const lastDate = incEnd < end ? incEnd : end;
+    const dates: string[] = [];
+
+    const totalDays = differenceInCalendarDays(lastDate, today);
+    for (let i = 0; i <= totalDays; i++) {
+      const d = addDays(today, i);
+      const diff = differenceInCalendarDays(d, anchor);
+      if (diff < 0) continue;
+      let hit = false;
+      switch (income.frequency) {
+        case 'weekly':   hit = diff % 7 === 0; break;
+        case 'biweekly': hit = diff % 14 === 0; break;
+        case 'monthly':  hit = getDate(d) === getDate(anchor); break;
+      }
+      if (hit) dates.push(format(d, 'yyyy-MM-dd'));
+    }
+    return dates;
+  }, [projectionMonths]);
 
   // Out-of-range: start date beyond projection OR end date entirely in the past
   const isIncomeOutOfRange = (startDate: string, endDate?: string) => {
@@ -112,7 +142,10 @@ export function IncomeForm() {
           {recurringIncomes.map((income) => {
             const isOutOfRange = isIncomeOutOfRange(income.startDate, income.endDate);
             return (
-            <SortableItem key={income.id} id={income.id} enabled={income.enabled !== false} onToggleEnabled={() => updateRecurringIncome(income.id, { enabled: income.enabled === false })} className={isOutOfRange ? 'border-2 border-red-500 bg-orange-100' : ''}>
+            <SortableItem key={income.id} id={income.id} enabled={income.enabled !== false} onToggleEnabled={() => updateRecurringIncome(income.id, { enabled: income.enabled === false })} className={isOutOfRange ? 'border-2 border-red-500 bg-orange-100' : ''}
+              onMouseEnter={() => setHighlight({ itemId: income.id, type: 'income', dates: computePayDates(income) })}
+              onMouseLeave={clearHighlight}
+            >
               <div className="flex items-center gap-2">
                 <EditableLabel
                   value={income.label}

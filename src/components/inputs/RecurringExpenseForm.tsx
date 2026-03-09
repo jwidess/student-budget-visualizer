@@ -1,9 +1,12 @@
+import { useCallback } from 'react';
 import { useBudgetStore } from '@/store/budgetStore';
 import { Plus, Trash2 } from 'lucide-react';
 import { EditableLabel } from './EditableLabel';
 import { DebouncedNumberInput } from './DebouncedNumberInput';
 import { SortableItem } from './SortableItem';
 import { Tooltip } from '@/components/Tooltip';
+import { useHoverHighlightStore } from '@/store/hoverHighlightStore';
+import { format, addMonths, addDays, startOfDay, differenceInCalendarDays, getDate } from 'date-fns';
 import {
   DndContext,
   closestCenter,
@@ -26,7 +29,24 @@ export function RecurringExpenseForm() {
     updateRecurringExpense,
     removeRecurringExpense,
     reorderRecurringExpenses,
+    projectionMonths,
   } = useBudgetStore();
+
+  const setHighlight = useHoverHighlightStore((s) => s.setHighlight);
+  const clearHighlight = useHoverHighlightStore((s) => s.clearHighlight);
+
+  /** Compute all dates a recurring expense fires on within the projection range. */
+  const computeExpenseDates = useCallback((dayOfMonth: number): string[] => {
+    const today = startOfDay(new Date());
+    const end = startOfDay(addMonths(today, projectionMonths));
+    const totalDays = differenceInCalendarDays(end, today);
+    const dates: string[] = [];
+    for (let i = 0; i <= totalDays; i++) {
+      const d = addDays(today, i);
+      if (getDate(d) === dayOfMonth) dates.push(format(d, 'yyyy-MM-dd'));
+    }
+    return dates;
+  }, [projectionMonths]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -64,7 +84,10 @@ export function RecurringExpenseForm() {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={recurringExpenses.map((e) => e.id)} strategy={verticalListSortingStrategy}>
           {recurringExpenses.map((expense) => (
-            <SortableItem key={expense.id} id={expense.id} enabled={expense.enabled !== false} onToggleEnabled={() => updateRecurringExpense(expense.id, { enabled: expense.enabled === false })}>
+            <SortableItem key={expense.id} id={expense.id} enabled={expense.enabled !== false} onToggleEnabled={() => updateRecurringExpense(expense.id, { enabled: expense.enabled === false })}
+              onMouseEnter={() => setHighlight({ itemId: expense.id, type: 'expense', dates: computeExpenseDates(expense.dayOfMonth) })}
+              onMouseLeave={clearHighlight}
+            >
               <div className="flex items-center gap-2">
                 <EditableLabel
                   value={expense.label}

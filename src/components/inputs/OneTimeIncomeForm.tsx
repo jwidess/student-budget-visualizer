@@ -4,6 +4,7 @@ import { format, addMonths } from 'date-fns';
 import { EditableLabel } from './EditableLabel';
 import { DebouncedNumberInput } from './DebouncedNumberInput';
 import { SortableItem } from './SortableItem';
+import { useHoverHighlightStore } from '@/store/hoverHighlightStore';
 import {
   DndContext,
   closestCenter,
@@ -28,6 +29,9 @@ export function OneTimeIncomeForm() {
     reorderOneTimeIncomes,
     projectionMonths,
   } = useBudgetStore();
+
+  const setHighlight = useHoverHighlightStore((s) => s.setHighlight);
+  const clearHighlight = useHoverHighlightStore((s) => s.clearHighlight);
 
   const minDate = format(new Date(), 'yyyy-MM-dd');
   const maxDate = format(addMonths(new Date(), projectionMonths), 'yyyy-MM-dd');
@@ -74,7 +78,10 @@ export function OneTimeIncomeForm() {
           {oneTimeIncomes.map((income) => {
             const isOutOfRange = isDateOutOfRange(income.date);
             return (
-            <SortableItem key={income.id} id={income.id} enabled={income.enabled !== false} onToggleEnabled={() => updateOneTimeIncome(income.id, { enabled: income.enabled === false })} className={isOutOfRange ? 'border-2 border-red-500 bg-orange-100' : ''}>
+            <SortableItem key={income.id} id={income.id} enabled={income.enabled !== false} onToggleEnabled={() => updateOneTimeIncome(income.id, { enabled: income.enabled === false })} className={isOutOfRange ? 'border-2 border-red-500 bg-orange-100' : ''}
+              onMouseEnter={() => setHighlight({ itemId: income.id, type: 'income', dates: [income.date] })}
+              onMouseLeave={clearHighlight}
+            >
               <div className="flex items-center gap-2">
                 <EditableLabel
                   value={income.label}

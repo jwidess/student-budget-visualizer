@@ -1,6 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Eye, EyeOff } from 'lucide-react';
+import { useHoverHighlightStore } from '@/store/hoverHighlightStore';
 
 interface SortableItemProps {
   id: string;
@@ -10,9 +11,15 @@ interface SortableItemProps {
   enabled?: boolean;
   /** Called when the user toggles the enabled state */
   onToggleEnabled?: () => void;
+  /** Called when mouse enters this item (for chart highlight) */
+  onMouseEnter?: () => void;
+  /** Called when mouse leaves this item (for chart highlight) */
+  onMouseLeave?: () => void;
 }
 
-export function SortableItem({ id, children, className = '', enabled = true, onToggleEnabled }: SortableItemProps) {
+export function SortableItem({ id, children, className = '', enabled = true, onToggleEnabled, onMouseEnter, onMouseLeave }: SortableItemProps) {
+  const highlightId = useHoverHighlightStore((s) => s.highlight?.itemId);
+  const isHighlighted = highlightId === id;
   const {
     attributes,
     listeners,
@@ -33,9 +40,13 @@ export function SortableItem({ id, children, className = '', enabled = true, onT
     <div
       ref={setNodeRef}
       style={style}
-      className={`rounded-lg border border-input p-4 space-y-3 bg-card ${
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      className={`rounded-lg border border-input p-4 space-y-3 bg-card transition-shadow duration-150 ${
         isDragging ? 'opacity-50 shadow-lg ring-2 ring-primary/30' : ''
-      } ${!enabled ? 'sortable-item-disabled' : ''} ${className}`}
+      } ${!enabled ? 'sortable-item-disabled' : ''} ${
+        isHighlighted ? 'ring-2 ring-amber-400 shadow-md shadow-amber-100' : ''
+      } ${className}`}
     >
       <div className="flex items-start gap-1">
         {/* Grip handle + enable/disable toggle stacked vertically */}

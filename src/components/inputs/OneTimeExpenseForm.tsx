@@ -4,6 +4,7 @@ import { format, addMonths } from 'date-fns';
 import { EditableLabel } from './EditableLabel';
 import { DebouncedNumberInput } from './DebouncedNumberInput';
 import { SortableItem } from './SortableItem';
+import { useHoverHighlightStore } from '@/store/hoverHighlightStore';
 import {
   DndContext,
   closestCenter,
@@ -28,6 +29,9 @@ export function OneTimeExpenseForm() {
     reorderOneTimeExpenses,
     projectionMonths,
   } = useBudgetStore();
+
+  const setHighlight = useHoverHighlightStore((s) => s.setHighlight);
+  const clearHighlight = useHoverHighlightStore((s) => s.clearHighlight);
 
   const minDate = format(new Date(), 'yyyy-MM-dd');
   const maxDate = format(addMonths(new Date(), projectionMonths), 'yyyy-MM-dd');
@@ -74,7 +78,10 @@ export function OneTimeExpenseForm() {
           {oneTimeExpenses.map((expense) => {
             const isOutOfRange = isDateOutOfRange(expense.date);
             return (
-            <SortableItem key={expense.id} id={expense.id} enabled={expense.enabled !== false} onToggleEnabled={() => updateOneTimeExpense(expense.id, { enabled: expense.enabled === false })} className={isOutOfRange ? 'border-2 border-red-500 bg-orange-100' : ''}>
+            <SortableItem key={expense.id} id={expense.id} enabled={expense.enabled !== false} onToggleEnabled={() => updateOneTimeExpense(expense.id, { enabled: expense.enabled === false })} className={isOutOfRange ? 'border-2 border-red-500 bg-orange-100' : ''}
+              onMouseEnter={() => setHighlight({ itemId: expense.id, type: 'expense', dates: [expense.date] })}
+              onMouseLeave={clearHighlight}
+            >
               <div className="flex items-center gap-2">
                 <EditableLabel
                   value={expense.label}

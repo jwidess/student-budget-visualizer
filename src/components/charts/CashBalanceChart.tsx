@@ -24,6 +24,7 @@ import {
 import { EventAnnotations } from './EventAnnotations';
 import type { AnnotationHoverInfo } from './EventAnnotations';
 import type { DailySnapshot, DailyEvent } from '@/engine/types';
+import { useHoverHighlightStore } from '@/store/hoverHighlightStore';
 
 /** Round down to nearest increment */
 function floorTo(value: number, increment: number): number {
@@ -120,6 +121,7 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
 
 export function CashBalanceChart() {
   const { snapshots } = useProjection();
+  const hoverHighlight = useHoverHighlightStore((s) => s.highlight);
 
   // Find the indices of the lowest and highest balance days across ALL data
   // so we can always include them in the sampled set and highlight them.
@@ -178,6 +180,22 @@ export function CashBalanceChart() {
     () => sampled.some((d) => d.events.some((e) => e.isOneTime)),
     [sampled],
   );
+
+  // ── Hover highlight: match highlight dates to chart data points ──
+  const highlightPoints = useMemo(() => {
+    if (!hoverHighlight) return [];
+    const dateSet = new Set(hoverHighlight.dates);
+    // Use full snapshots for accurate balance lookup since sampled may skip days
+    const snapshotMap = new Map(snapshots.map((s) => [s.date, s.balance]));
+    const points: { date: string; balance: number }[] = [];
+    for (const d of dateSet) {
+      const balance = snapshotMap.get(d);
+      if (balance !== undefined) {
+        points.push({ date: d, balance });
+      }
+    }
+    return points;
+  }, [hoverHighlight, snapshots]);
 
   // ── Sticky Y-axis domain ──
   // Only expands when data exceeds current bounds; prevents misleading
@@ -412,7 +430,7 @@ export function CashBalanceChart() {
               fill={CHART_COLORS.positive}
               stroke="white"
               strokeWidth={2}
-              shape={(props: Record<string, unknown>) => {
+              shape={(props: any) => {
                 const { cx, cy } = props as { cx: number; cy: number };
                 return (
                   <circle
@@ -432,7 +450,7 @@ export function CashBalanceChart() {
               fill={data[minIdx]!.balance >= 0 ? CHART_COLORS.warning : CHART_COLORS.negative}
               stroke="white"
               strokeWidth={2}
-              shape={(props: Record<string, unknown>) => {
+              shape={(props: any) => {
                 const { cx, cy } = props as { cx: number; cy: number };
                 const fill = data[minIdx]!.balance >= 0 ? CHART_COLORS.warning : CHART_COLORS.negative;
                 return (
@@ -480,6 +498,29 @@ export function CashBalanceChart() {
               onAnnotationHover={handleAnnotationHover}
             />
           )}
+          {/* Hover-highlight dots: dual-ring circles on dates tied to hovered input item */}
+          {dotsVisible && highlightPoints.map((pt) => {
+            const innerColor = hoverHighlight!.type === 'income' ? CHART_COLORS.positive : CHART_COLORS.negative;
+            return (
+              <ReferenceDot
+                key={pt.date}
+                x={pt.date}
+                y={pt.balance}
+                r={0}
+                shape={(props: any) => {
+                  const { cx, cy } = props as { cx: number; cy: number };
+                  return (
+                    <g className="animate-fade-in">
+                      {/* Outer yellow highlight ring */}
+                      <circle cx={cx} cy={cy} r={7} fill="none" stroke="#facc15" strokeWidth={2.5} opacity={0.85} />
+                      {/* Inner colored dot */}
+                      <circle cx={cx} cy={cy} r={3.5} fill={innerColor} stroke="white" strokeWidth={1.5} />
+                    </g>
+                  );
+                }}
+              />
+            );
+          })}
         </AreaChart>
       </ResponsiveContainer>
       {/* Tooltip overlay when hovering an annotation label */}
