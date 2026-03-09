@@ -152,8 +152,8 @@ src/
 ├── components/
 │   ├── charts/
 │   │   ├── CashBalanceChart.tsx      # Time-series area chart with balance visualization
+│   │   ├── EventAnnotations.tsx      # In-chart one-time event labels + connectors (collision-avoiding)
 │   │   └── IncomeExpenseChart.tsx    # Monthly bar chart comparing income vs expenses
-   │   └── EventAnnotations.tsx      # In-chart one-time event labels + connectors (collision-avoiding)
 │   ├── dashboard/
 │   │   └── SummaryCards.tsx          # Summary statistics and warning banners
 │   ├── inputs/
@@ -180,6 +180,7 @@ src/
 │   └── useProjection.ts # Memoized projection results from Zustand state
 ├── store/
 │   ├── budgetStore.ts   # Zustand store with localStorage persistence
+│   ├── hoverHighlightStore.ts # Tracks which item is hovered for chart highlighting
 │   └── templates.ts     # Pre-defined budget templates
 ├── lib/
 │   └── utils.ts         # Helper utilities (ID generation, formatting)
@@ -204,7 +205,7 @@ index.html               # Vite HTML entry
 - [ ] Add save slots so users can have multiple budgets (e.g. "Current Semester", "Next Semester", "Summer")
   - [x] Added import/export of input data in JSON format. This allows users to save multiple budgets by exporting their data and re-importing. Good enough for now.
 - [ ] Monthly expense end dates
-- [ ] Hover over items shows date range or point on chart. E.g., hovering over "Recurring Income" items would show first pay date to last pay date. Hovering over one-time income/expense would highlight date on chart.
+- [x] ~~Hover over items shows date range or point on chart. E.g., hovering over "Recurring Income" items would show first pay date to last pay date. Hovering over one-time income/expense would highlight date on chart.~~
 - [x] ~~Highlight One-Time Income/Expense dates on the chart with a small dot, card, text or something~~
 - [x] ~~Enable/Disable One-Time and Monthly Expenses/Income to easily see impact without deleting~~
 - [ ] Add tax factors to income projections to simulate tax withholding and refunds more accurately. Could just be a simple percentage input for each income source that reduces the projected amount, and then a separate "tax refund" one-time income entry that you can schedule for tax season.
