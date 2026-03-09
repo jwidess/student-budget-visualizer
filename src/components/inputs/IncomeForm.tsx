@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useBudgetStore } from '@/store/budgetStore';
 import { Plus, Trash2, X } from 'lucide-react';
 import type { PayFrequency, RecurringIncome } from '@/engine/types';
@@ -36,6 +36,9 @@ export function IncomeForm() {
   const setHighlight = useHoverHighlightStore((s) => s.setHighlight);
   const clearHighlight = useHoverHighlightStore((s) => s.clearHighlight);
 
+  // Track which income row is being hovered so highlight stays live when fields change
+  const [hoveredIncomeId, setHoveredIncomeId] = useState<string | null>(null);
+
   const maxDate = format(addMonths(new Date(), projectionMonths), 'yyyy-MM-dd');
   const minDate = format(new Date(), 'yyyy-MM-dd');
 
@@ -61,8 +64,34 @@ export function IncomeForm() {
       }
       if (hit) dates.push(format(d, 'yyyy-MM-dd'));
     }
+
+    // Add endDate if it falls mid-cycle (produces a partial paycheck)
+    if (income.endDate) {
+      const endDateObj = startOfDay(parseISO(income.endDate));
+      if (endDateObj <= end) {
+        const diffFromAnchor = differenceInCalendarDays(endDateObj, anchor);
+        let isRegularPayday = false;
+        switch (income.frequency) {
+          case 'weekly':   isRegularPayday = diffFromAnchor >= 0 && diffFromAnchor % 7 === 0; break;
+          case 'biweekly': isRegularPayday = diffFromAnchor >= 0 && diffFromAnchor % 14 === 0; break;
+          case 'monthly':  isRegularPayday = getDate(endDateObj) === getDate(anchor); break;
+        }
+        if (!isRegularPayday) {
+          dates.push(income.endDate);
+        }
+      }
+    }
+
     return dates;
   }, [projectionMonths]);
+
+  // Reactively update highlight when income data changes while the row is hovered
+  useEffect(() => {
+    if (!hoveredIncomeId) return;
+    const income = recurringIncomes.find((i) => i.id === hoveredIncomeId);
+    if (!income) return;
+    setHighlight({ itemId: income.id, type: 'income', dates: computePayDates(income) });
+  }, [hoveredIncomeId, recurringIncomes, computePayDates, setHighlight]);
 
   // Out-of-range: start date beyond projection OR end date entirely in the past
   const isIncomeOutOfRange = (startDate: string, endDate?: string) => {
@@ -143,8 +172,8 @@ export function IncomeForm() {
             const isOutOfRange = isIncomeOutOfRange(income.startDate, income.endDate);
             return (
             <SortableItem key={income.id} id={income.id} enabled={income.enabled !== false} onToggleEnabled={() => updateRecurringIncome(income.id, { enabled: income.enabled === false })} className={isOutOfRange ? 'border-2 border-red-500 bg-orange-100' : ''}
-              onMouseEnter={() => setHighlight({ itemId: income.id, type: 'income', dates: computePayDates(income) })}
-              onMouseLeave={clearHighlight}
+              onMouseEnter={() => setHoveredIncomeId(income.id)}
+              onMouseLeave={() => { setHoveredIncomeId(null); clearHighlight(); }}
             >
               <div className="flex items-center gap-2">
                 <EditableLabel
