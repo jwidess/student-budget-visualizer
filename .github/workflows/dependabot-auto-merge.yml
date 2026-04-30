@@ -19,6 +19,13 @@ jobs:
         uses: dependabot/fetch-metadata@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Approve PR for patch or security updates
+        if: ${{ steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.security-advisory-summary != '' }}
+        run: gh pr review "${{ github.event.pull_request.html_url }}" --approve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Enable auto-merge for patch or security updates
         if: ${{ steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.security-advisory-summary != '' }}
         uses: peter-evans/enable-pull-request-automerge@v3
